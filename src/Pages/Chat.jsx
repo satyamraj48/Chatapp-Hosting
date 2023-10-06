@@ -33,7 +33,7 @@ function Chat() {
 
 	function connectToWs() {
 		const toastId = toast.loading("Connecting...");
-		const ws = new WebSocket("ws://localhost:4000");
+		const ws = new WebSocket(`ws://${import.meta.env.VITE_REACT_APP_WS_URL}`);
 		setWs(ws);
 		ws.addEventListener("message", handleMessage);
 		ws.addEventListener("close", () => {
