@@ -4,7 +4,6 @@ import axios from "axios";
 import { UserContext } from "./Pages/UserContext";
 import { useContext, useEffect } from "react";
 import Chat from "./Pages/Chat";
-import.meta.env;
 
 function App() {
 	axios.defaults.baseURL = import.meta.env.VITE_REACT_APP_BASE_URL;
