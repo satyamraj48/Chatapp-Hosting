@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Scrollbar CSS ===== */
+/* Firefox */
+* {
+	scrollbar-width: auto;
+	scrollbar-color: #afb2bf;
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+	width: 3px;
+}
+*::-webkit-scrollbar-track {
+	background: #d9e8ff;
+}
+*::-webkit-scrollbar-thumb {
+	background: #afb2bf;
+	border-radius: 10px;
+	visibility: hidden;
+}
+*:active::-webkit-scrollbar-thumb,
+*:focus::-webkit-scrollbar-thumb,
+*:hover::-webkit-scrollbar-thumb {
+	visibility: visible;
+}
+
+/* hide arrow keys in input field */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.spinner2 {
+	width: 56px;
+	height: 56px;
+	border: 11.2px rgb(37, 99, 235) double;
+	border-left-style: solid;
+	border-radius: 50%;
+	animation: spinner-aib1d7 0.75s infinite linear;
+}
+
+@keyframes spinner-aib1d7 {
+	to {
+		transform: rotate(360deg);
+	}
+}
