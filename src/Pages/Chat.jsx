@@ -3,14 +3,15 @@ import { IoSend } from "react-icons/io5";
 import { GrAttachment } from "react-icons/gr";
 import Logo from "../components/core/ChatContacts/Logo";
 import { UserContext } from "./UserContext";
-import { BsArrowDownShort, BsArrowLeft } from "react-icons/bs";
+import { BsArrowDownShort, BsArrowLeft, BsBack } from "react-icons/bs";
 import { uniqBy } from "lodash";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Contact from "./Contact";
 import { HiUser } from "react-icons/hi2";
-import { AiOutlineMenu } from "react-icons/ai";
+import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
+import { IoMdArrowBack } from "react-icons/io";
 
 function Chat() {
 	const [ws, setWs] = useState(null);
@@ -179,17 +180,19 @@ function Chat() {
 			// onScroll={() => setIsScroll(true)}
 		>
 			<button
-				className="absolute md:hidden top-1 left-4 z-[50] text-2xl hover:bg-blue-50 active:bg-blue-100"
+				className={`absolute left-52 top-2 ${
+					!showList && "hidden"
+				} md:hidden z-[200] text-2xl active:scale-95`}
 				onClick={() => setShowList(!showList)}
 			>
-				<AiOutlineMenu className="text-blue-700" />
+				<RxCross2 className="text-blue-300 hover:bg-blue-600 hover:rounded-full" />
 			</button>
 			<div
-				className={`pt-6 absolute md:static z-[40] h-screen min-w-[250px] flex flex-col bg-transparent backdrop-blur-sm shadow-[0px_-10px_10px_0px] shadow-black/10 ${
+				className={`pt-6 absolute md:static z-[40] h-screen min-w-[250px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 					showList
 						? "translate-x-0 opacity-100"
 						: "translate-x-[-100%] opacity-0"
-				} transition-all duration-1000`}
+				} transition-all duration-500`}
 			>
 				{/* logo and contacts */}
 				<div className="flex-grow">
@@ -236,10 +239,19 @@ function Chat() {
 
 			{/* selected user message section */}
 			<div
-				className="relative mr-2 p-4 w-full max-w-[800px] flex flex-col bg-doodle-pattern bg-contain"
+				className="relative w-full max-w-[800px] flex flex-col bg-doodle-pattern bg-contain"
 				onClick={() => setIsScroll(!isScroll)}
 			>
-				<div className="flex-grow">
+				<div className="w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
+					<button
+						className="ml-2 md:hidden"
+						onClick={() => setShowList(!showList)}
+					>
+						<IoMdArrowBack className="text-[16px]" />
+					</button>
+					<p className="text-xl capitalize">{username}</p>
+				</div>
+				<div className="mx-4 flex-grow">
 					{!selectedUserId && (
 						<div className="h-full flex flex-col gap-2 items-center justify-center">
 							<div className="text-gray-300">No selected person</div>
@@ -257,7 +269,7 @@ function Chat() {
 								</div>
 							) : (
 								<div className="relative h-full">
-									<div className="absolute top-4 left-0 right-0 bottom-0 pr-1 space-y-2 overflow-y-scroll overflow-x-hidden">
+									<div className="absolute top-0 left-0 right-0 bottom-0 pr-1 space-y-2 overflow-y-scroll overflow-x-hidden">
 										<div className="w-full h-[30px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
 											<div
@@ -278,7 +290,7 @@ function Chat() {
 												<div
 													className={`inline-block shadow-md shadow-black/10 ${
 														message.sender === id
-															? "bg-blue-400 text-white"
+															? "bg-blue-500 text-white"
 															: "bg-white text-black"
 													} ${
 														loadingMsg &&
@@ -339,10 +351,8 @@ function Chat() {
 												</div>
 											</div>
 										))}
-										<div className="w-full h-[30px]"></div>
 										<div ref={divUnderMessages}></div>
 									</div>
-									<div className="relative h-8 shado-[0_-15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
 								</div>
 							)}
 						</>
@@ -359,9 +369,10 @@ function Chat() {
 							<BsArrowDownShort className="text-2xl text-gray-500" />
 						</button>
 
-						<div className="h-8 shado-[0_-15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
-
-						<form onSubmit={sendMessage} className="flex items-center gap-2">
+						<form
+							onSubmit={sendMessage}
+							className="mx-4 mb-4 flex items-center gap-2"
+						>
 							<input
 								type="text"
 								value={newMessageText}
