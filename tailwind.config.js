@@ -5,7 +5,11 @@ export default {
 		fontFamily: {
 			Poppins: ["Poppins", "sans-serif"],
 		},
-		extend: {},
+		extend: {
+			backgroundImage: {
+				'doodle-pattern': "url('/assets/Chat - doodle.jpg')",
+			  }
+		},
 	},
 	plugins: [],
 };

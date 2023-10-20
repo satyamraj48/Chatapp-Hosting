@@ -5,12 +5,12 @@ function Contact({ userId, selected, onClick, username, online }) {
 	return (
 		<div
 			className={`flex items-center gap-2 border-b border-b-gray-200 cursor-pointer ${
-				selected && "bg-blue-100"
+				selected && "bg-white shadow-sm"
 			} 
     `}
 			onClick={() => onClick(userId)}
 		>
-			{selected && <div className="w-1 h-14 bg-blue-500 rounded-r-md "></div>}
+			{selected && <div className="w-1 h-14 bg-blue-600 rounded-r-md "></div>}
 
 			<div className="px-4 py-2 flex items-center gap-3">
 				<Avatar userId={userId} username={username} online={online} />

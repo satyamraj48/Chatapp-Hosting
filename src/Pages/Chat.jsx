@@ -35,7 +35,7 @@ function Chat() {
 	function connectToWs() {
 		const toastId = toast.loading("Connecting...");
 		const ws = new WebSocket(
-			`${1 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
+			`${0 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
 		);
 		setWs(ws);
 		ws.addEventListener("message", handleMessage);
@@ -160,7 +160,7 @@ function Chat() {
 	function goToBottom() {
 		const div = divUnderMessages.current;
 		if (div) {
-			div.scrollIntoView({ behavior: "smooth", block: "end" });
+			div.scrollIntoView({ behavior: "instant", block: "end" });
 		}
 	}
 
@@ -185,7 +185,7 @@ function Chat() {
 				<AiOutlineMenu className="text-blue-700" />
 			</button>
 			<div
-				className={`pt-6 absolute md:static z-[40] h-screen min-w-[250px] flex flex-col bg-blue-50 ${
+				className={`pt-6 absolute md:static z-[40] h-screen min-w-[250px] flex flex-col bg-transparent backdrop-blur-sm shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 					showList
 						? "translate-x-0 opacity-100"
 						: "translate-x-[-100%] opacity-0"
@@ -236,7 +236,7 @@ function Chat() {
 
 			{/* selected user message section */}
 			<div
-				className="relative mr-2 p-4 w-full max-w-[800px] flex flex-col bg-blue-100"
+				className="relative mr-2 p-4 w-full max-w-[800px] flex flex-col bg-doodle-pattern bg-contain"
 				onClick={() => setIsScroll(!isScroll)}
 			>
 				<div className="flex-grow">
@@ -266,11 +266,20 @@ function Chat() {
 													message.sender === id ? "text-right" : "text-left"
 												}`}
 											>
+												<div className="my-4 grid place-content-center">
+													<p className="px-2 py-[2px] bg-white rounded-lg text-gray-400 text-xs shadow-sm shadow-black/5">
+														{new Date(message?.sentAt).toLocaleString("en-IN", {
+															day: "numeric",
+															month: "long",
+															year: "numeric",
+														})}
+													</p>
+												</div>
 												<div
-													className={`inline-block ${
+													className={`inline-block shadow-md shadow-black/10 ${
 														message.sender === id
 															? "bg-blue-400 text-white"
-															: "bg-gray-100 text-gray-800"
+															: "bg-white text-black"
 													} ${
 														loadingMsg &&
 														index === messagesWithoutDupes.length - 1 &&
@@ -333,13 +342,11 @@ function Chat() {
 										<div className="w-full h-[30px]"></div>
 										<div ref={divUnderMessages}></div>
 									</div>
-									<div className="relative h-8 bg-blue-100 shadow-[0_15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
-									
+									<div className="relative h-8 shado-[0_-15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
 								</div>
 							)}
 						</>
 					)}
-					
 				</div>
 				{!!selectedUserId && (
 					<>
@@ -351,8 +358,8 @@ function Chat() {
 						>
 							<BsArrowDownShort className="text-2xl text-gray-500" />
 						</button>
-						
-						<div className="h-8 bg-blue-100 shadow-[0_-15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
+
+						<div className="h-8 shado-[0_-15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
 
 						<form onSubmit={sendMessage} className="flex items-center gap-2">
 							<input
