@@ -7,7 +7,7 @@ exports.getMessages = async (req, res) => {
 		const userId = req.user.id;
 		// console.log(selectedUserId, userId);
 
-		const allMessages = await Message.find({
+		let allMessages = await Message.find({
 			sender: { $in: [userId, selectedUserId] },
 			recipient: { $in: [userId, selectedUserId] },
 		})

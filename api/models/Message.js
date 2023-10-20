@@ -12,6 +12,7 @@ const MessageSchema = new mongoose.Schema(
 		},
 		text: String,
 		file: String,
+		sentAt: String,
 	},
 	{ timestamps: true }
 );

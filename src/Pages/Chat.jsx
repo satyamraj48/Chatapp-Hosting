@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import Contact from "./Contact";
 import { HiUser } from "react-icons/hi2";
 import { AiOutlineMenu } from "react-icons/ai";
+import { RiCheckDoubleFill } from "react-icons/ri";
 
 function Chat() {
 	const [ws, setWs] = useState(null);
@@ -33,7 +34,9 @@ function Chat() {
 
 	function connectToWs() {
 		const toastId = toast.loading("Connecting...");
-		const ws = new WebSocket(`wss://${import.meta.env.VITE_REACT_APP_WS_URL}`);
+		const ws = new WebSocket(
+			`${1 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
+		);
 		setWs(ws);
 		ws.addEventListener("message", handleMessage);
 		ws.addEventListener("close", () => {
@@ -44,16 +47,6 @@ function Chat() {
 		});
 		console.log("Now Connected!");
 		toast.dismiss(toastId);
-	}
-
-	function showOnlinePeople(peopleArray) {
-		// console.log(peopleArray);
-		const people = {};
-		peopleArray.forEach(({ userId, username }) => {
-			if (userId !== id) people[userId] = username;
-		});
-		// console.log("online people-> ", people);
-		setOnlinePeople(people);
 	}
 
 	function handleMessage(event) {
@@ -76,14 +69,16 @@ function Chat() {
 				recipient: selectedUserId,
 				text: newMessageText,
 				file: file,
+				sentAt: new Date(),
 			})
 		);
-
 		if (file) {
 			axios
 				.get("/auth/messages/" + selectedUserId)
 				.then((res) => setMessages(res.data.data));
-		} else {
+		}
+
+		if (!file) {
 			setMessages((prev) => [
 				...prev,
 				{
@@ -91,11 +86,22 @@ function Chat() {
 					sender: id,
 					recipient: selectedUserId,
 					_id: Date.now(),
+					sentAt: new Date(),
 				},
 			]);
 		}
 		setNewMessageText("");
 		// setLoadingMsg(false);
+	}
+
+	function showOnlinePeople(peopleArray) {
+		// console.log(peopleArray);
+		const people = {};
+		peopleArray.forEach(({ userId, username }) => {
+			if (userId !== id) people[userId] = username;
+		});
+		// console.log("online people-> ", people);
+		setOnlinePeople(people);
 	}
 
 	function handleLogout() {
@@ -251,7 +257,8 @@ function Chat() {
 								</div>
 							) : (
 								<div className="relative h-full">
-									<div className="absolute top-0 left-0 right-0 bottom-0 pr-1 space-y-2 overflow-y-scroll overflow-x-hidden">
+									<div className="absolute top-4 left-0 right-0 bottom-0 pr-1 space-y-2 overflow-y-scroll overflow-x-hidden">
+										<div className="w-full h-[30px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
 											<div
 												key={index}
@@ -260,7 +267,7 @@ function Chat() {
 												}`}
 											>
 												<div
-													className={`inline-block px-5 py-2 ${
+													className={`inline-block ${
 														message.sender === id
 															? "bg-blue-400 text-white"
 															: "bg-gray-100 text-gray-800"
@@ -272,11 +279,11 @@ function Chat() {
 												>
 													{loadingMsg &&
 													index === messagesWithoutDupes.length - 1 ? (
-														<div className="animate-pulse text-white tracking-wide">
+														<div className="animate-pulse text-white tracking-wide px-5 py-2">
 															Sending...
 														</div>
 													) : (
-														<div>
+														<div className="ml-4 mr-5 mt-2">
 															{message.text}
 															{message.file && (
 																<div className="">
@@ -295,16 +302,44 @@ function Chat() {
 															)}
 														</div>
 													)}
+													{/* date and seen(tick) */}
+													<p
+														className={`ml-4 mt-[2px] mr-2 mb-1 flex justify-end items-center text-[10px] ${
+															message.sender === id
+																? "text-blue-100"
+																: "text-gray-500"
+														}`}
+													>
+														{new Date(message?.sentAt).toLocaleString("en-IN", {
+															hour: "numeric",
+															minute: "numeric",
+														})}
+
+														{!message.seenAt && (
+															<span
+																className={`ml-1 text-[15px] ${
+																	message.sender === id
+																		? "text-yellow-200"
+																		: "hidden"
+																}`}
+															>
+																<RiCheckDoubleFill />
+															</span>
+														)}
+													</p>
 												</div>
 											</div>
 										))}
+										<div className="w-full h-[30px]"></div>
 										<div ref={divUnderMessages}></div>
 									</div>
-									<div className="relative h-2 bg-blue-100 shadow-[0_15px_20px_rgb(219,234,254)] z-[10]"></div>
+									<div className="relative h-8 bg-blue-100 shadow-[0_15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
+									
 								</div>
 							)}
 						</>
 					)}
+					
 				</div>
 				{!!selectedUserId && (
 					<>
@@ -316,7 +351,9 @@ function Chat() {
 						>
 							<BsArrowDownShort className="text-2xl text-gray-500" />
 						</button>
-						<div className="h-8 bg-blue-100 shadow-[0_-5px_20px_0px_rgb(219,234,254)] z-[10]"></div>
+						
+						<div className="h-8 bg-blue-100 shadow-[0_-15px_20px_0px_rgb(219,234,254)] z-[10]"></div>
+
 						<form onSubmit={sendMessage} className="flex items-center gap-2">
 							<input
 								type="text"

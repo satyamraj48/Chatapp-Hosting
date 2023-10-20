@@ -46,7 +46,7 @@ const server = app.listen(PORT, () => {
 const wss = new ws.WebSocketServer({ server });
 
 wss.on("connection", (connection, req) => {
-	console.log("WebSocket Connected");
+	console.log("A new User has connected", connection.id);
 
 	function notifyAboutOnlinePeople() {
 		//notify everyone about online people (when someone connects)
@@ -106,7 +106,7 @@ wss.on("connection", (connection, req) => {
 	connection.on("message", async (message) => {
 		const messageData = JSON.parse(message.toString());
 		// console.log(messageData);
-		const { recipient, text, file } = messageData;
+		const { recipient, text, file, sentAt } = messageData;
 		let filename = null;
 		if (file) {
 			// console.log(file);
@@ -125,7 +125,9 @@ wss.on("connection", (connection, req) => {
 				recipient: recipient,
 				text: text,
 				file: file ? filename : null,
+				sentAt: sentAt,
 			});
+
 			[...wss.clients]
 				.filter((c) => c.userId === recipient)
 				.forEach((c) =>
@@ -136,6 +138,7 @@ wss.on("connection", (connection, req) => {
 							sender: connection.userId,
 							recipient: recipient,
 							_id: messageDoc._id,
+							sentAt: sentAt,
 						})
 					)
 				);
