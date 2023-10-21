@@ -73,11 +73,6 @@ function Chat() {
 				sentAt: new Date(),
 			})
 		);
-		if (file) {
-			axios
-				.get("/auth/messages/" + selectedUserId)
-				.then((res) => setMessages(res.data.data));
-		}
 
 		if (!file) {
 			setMessages((prev) => [
@@ -90,6 +85,10 @@ function Chat() {
 					sentAt: new Date(),
 				},
 			]);
+		} else {
+			axios
+				.get("/auth/messages/" + selectedUserId)
+				.then((res) => setMessages(res.data.data));
 		}
 		setNewMessageText("");
 		// setLoadingMsg(false);
@@ -174,6 +173,37 @@ function Chat() {
 	};
 	window.addEventListener("resize", getWindowSize);
 
+	let val;
+	function getDateOfMessage(sentAt) {
+		val = new Date(sentAt).toLocaleString("en-IN", {
+			day: "numeric",
+			month: "long",
+			year: "numeric",
+		});
+
+		let date = new Date().getDate() - new Date(sentAt).getDate();
+		let month = new Date().getMonth() - new Date(sentAt).getMonth();
+		let year = new Date().getYear() - new Date(sentAt).getYear();
+
+		if (date === 0 && month === 0 && year === 0) return "Today";
+		else if (date === 1 && month === 0 && year === 0) return "Yesterday";
+		else {
+			let date = new Date(sentAt).toLocaleString("en-IN", {
+				day: "numeric",
+				month: "long",
+				year: "numeric",
+			});
+			return date;
+		}
+	}
+	function currentMessageDate(sentAt) {
+		return new Date(sentAt).toLocaleString("en-IN", {
+			day: "numeric",
+			month: "long",
+			year: "numeric",
+		});
+	}
+
 	return (
 		<div
 			className="relative h-screen flex tracking-wide font-Poppins"
@@ -239,7 +269,7 @@ function Chat() {
 
 			{/* selected user message section */}
 			<div
-				className="relative w-full max-w-[800px] flex flex-col bg-doodle-pattern bg-contain"
+				className="relative w-full flex flex-col bg-doodle-pattern bg-contain"
 				onClick={() => setIsScroll(!isScroll)}
 			>
 				<div className="w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
@@ -269,7 +299,7 @@ function Chat() {
 								</div>
 							) : (
 								<div className="relative h-full">
-									<div className="absolute top-0 left-0 right-0 bottom-0 pr-1 space-y-2 overflow-y-scroll overflow-x-hidden">
+									<div className="absolute inset-0 pr-1 space-y-2 overflow-y-scroll overflow-x-hidden">
 										<div className="w-full h-[30px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
 											<div
@@ -278,17 +308,20 @@ function Chat() {
 													message.sender === id ? "text-right" : "text-left"
 												}`}
 											>
-												<div className="my-4 grid place-content-center">
-													<p className="px-2 py-[2px] bg-white rounded-lg text-gray-400 text-xs shadow-sm shadow-black/5">
-														{new Date(message?.sentAt).toLocaleString("en-IN", {
-															day: "numeric",
-															month: "long",
-															year: "numeric",
-														})}
+												<div className="grid place-content-center">
+													<p
+														className={`my-10 px-2 py-[2px] bg-white rounded-lg text-gray-900 text-sm shadow-md shadow-black/10 ${
+															val != currentMessageDate(message?.sentAt)
+																? "block"
+																: "hidden"
+														}`}
+													>
+														{getDateOfMessage(message?.sentAt)}
 													</p>
 												</div>
+
 												<div
-													className={`inline-block shadow-md shadow-black/10 ${
+													className={`inline-block max-w-[70%] shadow-md shadow-black/10 ${
 														message.sender === id
 															? "bg-blue-500 text-white"
 															: "bg-white text-black"
@@ -296,18 +329,25 @@ function Chat() {
 														loadingMsg &&
 														index === messagesWithoutDupes.length - 1 &&
 														"bg-gray-400"
-													} text-sm text-left rounded-md`}
+													} text-sm text-left rounded-md space-y-`}
 												>
+													<div className="bg-red-600 w- h-"></div>
 													{loadingMsg &&
 													index === messagesWithoutDupes.length - 1 ? (
 														<div className="animate-pulse text-white tracking-wide px-5 py-2">
 															Sending...
 														</div>
 													) : (
-														<div className="ml-4 mr-5 mt-2">
-															{message.text}
+														<div className="mx-2 mt-1">
+															<span
+																className={`${
+																	message.text.length > 30 && "break-words"
+																}`}
+															>
+																{message.text}
+															</span>
 															{message.file && (
-																<div className="">
+																<div>
 																	<a
 																		target="_blank"
 																		href={
@@ -321,33 +361,40 @@ function Chat() {
 																	</a>
 																</div>
 															)}
-														</div>
-													)}
-													{/* date and seen(tick) */}
-													<p
-														className={`ml-4 mt-[2px] mr-2 mb-1 flex justify-end items-center text-[10px] ${
-															message.sender === id
-																? "text-blue-100"
-																: "text-gray-500"
-														}`}
-													>
-														{new Date(message?.sentAt).toLocaleString("en-IN", {
-															hour: "numeric",
-															minute: "numeric",
-														})}
-
-														{!message.seenAt && (
-															<span
-																className={`ml-1 text-[15px] ${
+															{/* date and seen(tick) */}
+															<p
+																className={`ml-2 ${
+																	message.text.length > 30
+																		? "flex"
+																		: "inline-flex"
+																} items-center justify-end gap-[2px] text-[10px] ${
 																	message.sender === id
-																		? "text-yellow-200"
-																		: "hidden"
+																		? "text-blue-200"
+																		: "text-gray-600"
 																}`}
 															>
-																<RiCheckDoubleFill />
-															</span>
-														)}
-													</p>
+																{new Date(message?.sentAt).toLocaleString(
+																	"en-IN",
+																	{
+																		hour: "numeric",
+																		minute: "numeric",
+																	}
+																)}
+
+																{!message.seenAt && (
+																	<span
+																		className={`text-[14px] ${
+																			message.sender === id
+																				? "text-yellow-200"
+																				: "hidden"
+																		}`}
+																	>
+																		<RiCheckDoubleFill />
+																	</span>
+																)}
+															</p>
+														</div>
+													)}
 												</div>
 											</div>
 										))}
@@ -379,9 +426,9 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="p-2 flex-grow bg-white rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900"
+								className="p-2 pl-3 flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
-							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer">
+							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
 									type="file"
 									onChange={handleSendFile}
@@ -392,9 +439,9 @@ function Chat() {
 							<button
 								type="submit"
 								disabled={!!!newMessageText}
-								className={`bg-blue-500 rounded-full text-white text-2xl p-2`}
+								className={`bg-blue-600 rounded-full text-white drop-shadow-md shadow-lg p-3`}
 							>
-								<IoSend />
+								<IoSend className="text-md" />
 							</button>
 						</form>
 					</>

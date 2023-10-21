@@ -11,13 +11,13 @@
 
 /* Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
-	width: 3px;
+	width: 2px;
 }
 *::-webkit-scrollbar-track {
-	background: #d9e8ff;
+	background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-	background: #afb2bf;
+	background: #9ea0a8;
 	border-radius: 10px;
 	visibility: hidden;
 }
