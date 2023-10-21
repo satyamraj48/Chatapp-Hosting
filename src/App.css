@@ -60,7 +60,7 @@ input::-webkit-inner-spin-button {
 	position: absolute;
 	inset: 0;
 	background-color: rgb(225, 236, 255);
-	animation: logoZoom 2s ease-in 1;
+	animation: logoZoom 1s ease-in 1;
 }
 @keyframes logoZoom {
 	0% {
@@ -101,7 +101,7 @@ input::-webkit-inner-spin-button {
 	font-weight: 500;
 	background-color: rgb(44, 85, 219);
 	filter: drop-shadow(5px 5px 10px #00000065);
-	animation: bg 2s ease-in 1;
+	animation: bg 1s ease-in 1;
 }
 @keyframes bg {
 	60% {

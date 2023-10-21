@@ -38,7 +38,7 @@ function Chat() {
 	function connectToWs() {
 		const toastId = toast.loading("Connecting...");
 		const ws = new WebSocket(
-			`${1 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
+			`${0 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
 		);
 		setWs(ws);
 		ws.addEventListener("message", handleMessage);
