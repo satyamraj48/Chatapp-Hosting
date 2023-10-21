@@ -3,7 +3,7 @@ import { IoSend } from "react-icons/io5";
 import { GrAttachment } from "react-icons/gr";
 import Logo from "../components/core/ChatContacts/Logo";
 import { UserContext } from "./UserContext";
-import { BsArrowDownShort, BsArrowLeft, BsBack } from "react-icons/bs";
+import { BsArrowDownShort, BsArrowLeft } from "react-icons/bs";
 import { uniqBy } from "lodash";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -12,6 +12,8 @@ import { HiUser } from "react-icons/hi2";
 import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
 import { IoMdArrowBack } from "react-icons/io";
+import LogoAnimate from "./LogoAnimate";
+import useOnClickOutside from "../hooks/useOnClickOutside.js";
 
 function Chat() {
 	const [ws, setWs] = useState(null);
@@ -173,6 +175,7 @@ function Chat() {
 	};
 	window.addEventListener("resize", getWindowSize);
 
+	//date of message
 	let val;
 	function getDateOfMessage(sentAt) {
 		val = new Date(sentAt).toLocaleString("en-IN", {
@@ -203,14 +206,18 @@ function Chat() {
 			year: "numeric",
 		});
 	}
+	const clickOutsideRef = useRef();
+	useOnClickOutside(clickOutsideRef, () => setShowList(false));
 
 	return (
 		<div
 			className="relative h-screen flex tracking-wide font-Poppins"
 			// onScroll={() => setIsScroll(true)}
 		>
+			<LogoAnimate />
+
 			<button
-				className={`absolute left-52 top-2 ${
+				className={`absolute left-64 top-3 ${
 					!showList && "hidden"
 				} md:hidden z-[200] text-2xl active:scale-95`}
 				onClick={() => setShowList(!showList)}
@@ -218,11 +225,12 @@ function Chat() {
 				<RxCross2 className="text-blue-300 hover:bg-blue-600 hover:rounded-full" />
 			</button>
 			<div
-				className={`pt-6 absolute md:static z-[40] h-screen min-w-[250px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
+				className={`pt-6 absolute md:static z-[40] h-screen min-w-[60%] md:min-w-[270px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 					showList
 						? "translate-x-0 opacity-100"
 						: "translate-x-[-100%] opacity-0"
 				} transition-all duration-500`}
+				// ref={clickOutsideRef}
 			>
 				{/* logo and contacts */}
 				<div className="flex-grow">
@@ -237,6 +245,7 @@ function Chat() {
 								selected={userId === selectedUserId}
 								onClick={() => setSelectedUserId(userId)}
 								username={onlinePeople[userId]}
+								setShowList={setShowList}
 							/>
 						))}
 						{Object.keys(offlinePeople)?.map((userId) => (
@@ -247,6 +256,7 @@ function Chat() {
 								selected={userId === selectedUserId}
 								onClick={(id) => setSelectedUserId(id)}
 								username={offlinePeople[userId].username}
+								setShowList={setShowList}
 							/>
 						))}
 					</div>
@@ -381,13 +391,11 @@ function Chat() {
 																	}
 																)}
 
-																{!message.seenAt && (
+																{true && (
 																	<span
 																		className={`text-[14px] ${
-																			message.sender === id
-																				? "text-yellow-200"
-																				: "hidden"
-																		}`}
+																			message.sender === id ? "" : "hidden"
+																		} ${true && "text-yellow-200"}`}
 																	>
 																		<RiCheckDoubleFill />
 																	</span>
