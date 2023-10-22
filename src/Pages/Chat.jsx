@@ -308,8 +308,8 @@ function Chat() {
 									<div className=" spinner2"></div>
 								</div>
 							) : (
-								<div className="relative h-full">
-									<div className="absolute inset-0 pr-1 space-y-2 overflow-y-scroll overflow-x-hidden">
+								<div className="relative bottom-14 h-full bg-yellow-20">
+									<div className="absolute inset-0 space-y-2 overflow-y-scroll overflow-x-hidden">
 										<div className="w-full h-[30px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
 											<div
@@ -423,7 +423,6 @@ function Chat() {
 						>
 							<BsArrowDownShort className="text-2xl text-gray-500" />
 						</button>
-						<div className="h-[7%]"></div>
 
 						<form
 							onSubmit={sendMessage}
@@ -435,7 +434,7 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="p-2 pl-3 min-w-[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="p-2 pl-3 w-[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
