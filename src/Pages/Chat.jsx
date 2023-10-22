@@ -291,7 +291,7 @@ function Chat() {
 					</button>
 					<p className="text-xl capitalize">{username}</p>
 				</div>
-				<div className="mx-4 flex-grow">
+				<div className="px-4 flex-grow">
 					{!selectedUserId && (
 						<div className="h-full flex flex-col gap-2 items-center justify-center">
 							<div className="text-gray-300">No selected person</div>
@@ -426,7 +426,7 @@ function Chat() {
 
 						<form
 							onSubmit={sendMessage}
-							className="mx-4 mb-4 max-w-full flex items-center gap-2"
+							className="px-4 pb-4 max-w-full flex items-center gap-2"
 						>
 							<input
 								type="text"
@@ -434,7 +434,7 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="p-2 pl-3 w-full flex-gro bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="p-2 pl-3 w-[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
