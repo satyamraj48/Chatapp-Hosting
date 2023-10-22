@@ -308,7 +308,7 @@ function Chat() {
 									<div className=" spinner2"></div>
 								</div>
 							) : (
-								<div className="relative bottom-14 h-full bg-yellow-20">
+								<div className="relative h-[calc(100vh-4rem)] bg-yellow-20">
 									<div className="absolute inset-0 space-y-2 overflow-y-scroll overflow-x-hidden">
 										<div className="w-full h-[30px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
