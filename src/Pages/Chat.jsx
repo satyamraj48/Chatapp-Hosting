@@ -282,7 +282,7 @@ function Chat() {
 				className="relative w-full flex flex-col bg-doodle-pattern bg-contain"
 				onClick={() => setIsScroll(!isScroll)}
 			>
-				<div className="w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
+				<div className="fixed z-[200] top-0 w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
 					<button
 						className="ml-2 md:hidden"
 						onClick={() => setShowList(!showList)}
@@ -423,10 +423,11 @@ function Chat() {
 						>
 							<BsArrowDownShort className="text-2xl text-gray-500" />
 						</button>
+						<div className="h-[60px]"></div>
 
 						<form
 							onSubmit={sendMessage}
-							className="sticky px-4 pb-4 flex items-center gap-2"
+							className="absolute inset-x-1 bottom-0 px-4 pb-4 flex items-center gap-2"
 						>
 							<input
 								type="text"
@@ -434,7 +435,7 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="p-2 pl-3 w-[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="p-2 pl-3 -[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
