@@ -4,7 +4,7 @@ function LogoAnimate() {
 	return (
 		<>
 			<div className="wrapper">
-				<button className="title"><p className="drop-shadow-xl">ChatApp</p></button>
+				<button className="title"><p className="text-[40px] drop-shadow-lg">ChatApp</p></button>
 			</div>
 		</>
 	);

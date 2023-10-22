@@ -8,8 +8,8 @@ function Contact({ userId, selected, onClick, username, online, setShowList }) {
 
 	return (
 		<div
-			className={`flex items-center gap-2 border-b border-b-gray-200 ${
-				selected ? "bg-white shadow-sm" : "hover:bg-gray-200 drop-shadow-sm"
+			className={`flex items-center gap-2 border-b border-b-blue-100 ${
+				selected ? "bg-white shadow-md" : "hover:bg-gray-200 drop-shadow-sm"
 			} 
     `}
 			onClick={() => onClick(userId)}

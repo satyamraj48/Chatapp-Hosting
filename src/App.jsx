@@ -29,12 +29,7 @@ function App() {
 	}, []);
 
 	if (username) {
-		return (
-			<>
-				{/* <LogoAnimate /> */}
-				<Chat />
-			</>
-		);
+		return <Chat />;
 	}
 
 	return <RegisterAndLoginForm />;

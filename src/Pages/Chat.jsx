@@ -225,7 +225,7 @@ function Chat() {
 				<RxCross2 className="text-blue-300 hover:bg-blue-600 hover:rounded-full" />
 			</button>
 			<div
-				className={`pt-6 absolute md:static z-[40] h-screen min-w-[60%] md:min-w-[270px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
+				className={`pt-6 absolute md:static z-[200] h-screen min-w-[60%] md:min-w-[270px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 					showList
 						? "translate-x-0 opacity-100"
 						: "translate-x-[-100%] opacity-0"
@@ -426,7 +426,7 @@ function Chat() {
 
 						<form
 							onSubmit={sendMessage}
-							className="fixed z-[200] inset-x-1 bottom-0 px-4 pb-4 flex items-center gap-2"
+							className="fixed z-[120] inset-x-1 bottom-0 px-4 pb-4 flex items-center gap-2"
 						>
 							<input
 								type="text"
