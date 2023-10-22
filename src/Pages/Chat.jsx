@@ -38,7 +38,7 @@ function Chat() {
 	function connectToWs() {
 		const toastId = toast.loading("Connecting...");
 		const ws = new WebSocket(
-			`${1 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
+			`${0 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
 		);
 		setWs(ws);
 		ws.addEventListener("message", handleMessage);
@@ -426,7 +426,7 @@ function Chat() {
 
 						<form
 							onSubmit={sendMessage}
-							className="px-4 pb-4 max-w-full flex items-center gap-2"
+							className="sticky px-4 pb-4 flex items-center gap-2"
 						>
 							<input
 								type="text"
