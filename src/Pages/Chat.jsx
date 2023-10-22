@@ -126,8 +126,9 @@ function Chat() {
 
 	useEffect(() => {
 		goToBottom();
-		// console.log("id-> ", id);
-		// console.log("msg-> ", messages);
+		const box = document.querySelector(".seenBox");
+		const isSeen = isInViewport(box);
+		console.log("isSeen->  ", isSeen);
 	}, [messages]);
 
 	useEffect(() => {
@@ -206,8 +207,21 @@ function Chat() {
 			year: "numeric",
 		});
 	}
+
+	// to hide chat list
 	const clickOutsideRef = useRef();
 	useOnClickOutside(clickOutsideRef, () => setShowList(false));
+
+	function isInViewport(element) {
+		const rect = element.getBoundingClientRect();
+		return (
+			rect.top >= 0 &&
+			rect.left >= 0 &&
+			rect.bottom <=
+				(window.innerHeight || document.documentElement.clientHeight) &&
+			rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+		);
+	}
 
 	return (
 		<div
@@ -291,7 +305,7 @@ function Chat() {
 					</button>
 					<p className="text-xl capitalize">{username}</p>
 				</div>
-				<div className="px-4 flex-grow">
+				<div className="seenBox px-4 flex-grow">
 					{!selectedUserId && (
 						<div className="h-full flex flex-col gap-2 items-center justify-center">
 							<div className="text-gray-300">No selected person</div>
@@ -417,7 +431,7 @@ function Chat() {
 					<>
 						<button
 							className={`${
-								isScroll ? "grid" : "hidden"
+								isScroll ? "hidden" : "hidden"
 							} absolute bottom-20 right-10 grid place-content-center bg-gray-100 rounded-full p-1 shadow-md shadow-gray-400 border border-gray-400 z-[200]`}
 							onClick={goToBottom}
 						>
