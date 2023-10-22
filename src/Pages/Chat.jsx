@@ -13,7 +13,6 @@ import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
 import { IoMdArrowBack } from "react-icons/io";
 import LogoAnimate from "./LogoAnimate";
-import useOnClickOutside from "../hooks/useOnClickOutside.js";
 
 function Chat() {
 	const [ws, setWs] = useState(null);
@@ -208,10 +207,6 @@ function Chat() {
 		});
 	}
 
-	// to hide chat list
-	const clickOutsideRef = useRef();
-	useOnClickOutside(clickOutsideRef, () => setShowList(false));
-
 	function isInViewport(element) {
 		const rect = element.getBoundingClientRect();
 		return (
@@ -231,20 +226,19 @@ function Chat() {
 			<LogoAnimate />
 
 			<button
-				className={`absolute left-[54%] top-3 ${
+				className={`absolute left-[54%] top-20 ${
 					!showList && "hidden"
-				} md:hidden z-[200] text-2xl active:scale-95`}
+				} md:hidden z-[250] text-2xl active:scale-95`}
 				onClick={() => setShowList(!showList)}
 			>
-				<RxCross2 className="text-blue-300 hover:bg-blue-600 hover:rounded-full" />
+				<RxCross2 className="text-blue-500 hover:bg-blue-100 hover:rounded-full" />
 			</button>
 			<div
-				className={`pt-6 absolute md:static z-[200] h-screen min-w-[60%] md:min-w-[270px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
+				className={`pt-6 absolute md:static z-[200] h-screen w-[60%] md:w-[330px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 					showList
 						? "translate-x-0 opacity-100"
 						: "translate-x-[-100%] opacity-0"
 				} transition-all duration-500`}
-				// ref={clickOutsideRef}
 			>
 				{/* logo and contacts */}
 				<div className="flex-grow">
@@ -293,7 +287,7 @@ function Chat() {
 
 			{/* selected user message section */}
 			<div
-				className="relative w-full flex flex-col bg-doodle-pattern bg-contain"
+				className="relative w-full md:w-[calc(100%-330px)] bg-doodle-pattern bg-contain overflow-x-clip"
 				onClick={() => setIsScroll(!isScroll)}
 			>
 				<div className="fixed z-[200] top-0 w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
@@ -305,7 +299,7 @@ function Chat() {
 					</button>
 					<p className="text-xl capitalize">{username}</p>
 				</div>
-				<div className="seenBox px-4 flex-grow">
+				<div className="seenBox px-2 flex-grow">
 					{!selectedUserId && (
 						<div className="h-full flex flex-col gap-2 items-center justify-center">
 							<div className="text-gray-300">No selected person</div>
@@ -319,11 +313,11 @@ function Chat() {
 						<>
 							{loading ? (
 								<div className="h-full grid place-content-center">
-									<div className=" spinner2"></div>
+									<div className="spinner2"></div>
 								</div>
 							) : (
 								<div className="relative h-[calc(100vh-4rem)] bg-yellow-20">
-									<div className="absolute inset-0 space-y-2 overflow-y-scroll overflow-x-hidden">
+									<div className="absolute inset-0 px-2 space-y-2 overflow-y-scroll overflow-x-hidden">
 										<div className="w-full h-[30px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
 											<div
@@ -440,7 +434,7 @@ function Chat() {
 
 						<form
 							onSubmit={sendMessage}
-							className="fixed z-[120] inset-x-1 bottom-0 px-4 pb-4 flex items-center gap-2"
+							className="bg-pink-40 fixed bottom-0 z-[120] w-full md:w-[calc(100%-330px)] px-3 pb-4 flex items-center gap-2"
 						>
 							<input
 								type="text"
@@ -448,7 +442,7 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="p-2 pl-3 w-[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="px-3 py-2 flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
