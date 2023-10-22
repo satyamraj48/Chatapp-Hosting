@@ -427,7 +427,7 @@ function Chat() {
 
 						<form
 							onSubmit={sendMessage}
-							className="absolute inset-x-1 bottom-0 px-4 pb-4 flex items-center gap-2"
+							className="fixed z-[200] inset-x-1 bottom-0 px-4 pb-4 flex items-center gap-2"
 						>
 							<input
 								type="text"
@@ -435,7 +435,7 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="p-2 pl-3 -[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="p-2 pl-3 w-[80%] flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
