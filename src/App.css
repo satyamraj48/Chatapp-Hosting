@@ -69,22 +69,16 @@ input::-webkit-inner-spin-button {
 		opacity: 100;
 	}
 	50% {
-		opacity: 50;
-		transform: scale3d(1, 1);
-	}
-	95% {
-		transform: scale3d(4, 4);
-		filter: blur(4px);
-	}
-	99% {
-		display: flex;
-		transform: scale3d(30, 30, 30);
-		filter: blur(10px);
-		opacity: 0;
+		opacity: 100;
+		transform: scale(1, 1);
+		filter: blur(0px);
 	}
 	100% {
+		transform: scale3d(20, 20, 10);
+		filter: blur(40px);
 		display: hidden;
 		visibility: hidden;
+		opacity: 0;
 	}
 }
 
@@ -101,13 +95,4 @@ input::-webkit-inner-spin-button {
 	font-weight: 500;
 	background-color: rgb(44, 85, 219);
 	filter: drop-shadow(5px 5px 10px #00000065);
-	animation: bg 1s ease-in 1;
-}
-@keyframes bg {
-	60% {
-		background-color: rgb(44, 85, 219);
-	}
-	100% {
-		background-color: white;
-	}
 }

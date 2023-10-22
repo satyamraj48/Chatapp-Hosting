@@ -217,7 +217,7 @@ function Chat() {
 			<LogoAnimate />
 
 			<button
-				className={`absolute left-64 top-3 ${
+				className={`absolute left-[54%] top-3 ${
 					!showList && "hidden"
 				} md:hidden z-[200] text-2xl active:scale-95`}
 				onClick={() => setShowList(!showList)}
@@ -426,7 +426,7 @@ function Chat() {
 
 						<form
 							onSubmit={sendMessage}
-							className="mx-4 mb-4 flex items-center gap-2"
+							className="mx-4 mb-4 max-w-full flex items-center gap-2"
 						>
 							<input
 								type="text"
@@ -434,7 +434,7 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="p-2 pl-3 flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="p-2 pl-3 w-full flex-gro bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
