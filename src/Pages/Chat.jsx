@@ -68,7 +68,7 @@ function Chat() {
 	function connectToWs() {
 		const toastId = toast.loading("Connecting...");
 		const ws = new WebSocket(
-			`${0 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
+			`${1 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
 		);
 		setWs(ws);
 		// ws.addEventListener("message", handleMessage);
@@ -304,7 +304,7 @@ function Chat() {
 			>
 				{/* logo and contacts */}
 				<div className="flex-grow">
-					<div></div>
+					{/* <div></div> */}
 					<Logo />
 					{/* contacts list */}
 					<div className="space-y-0">
