@@ -8,6 +8,7 @@ const ws = require("ws");
 const jwt = require("jsonwebtoken");
 const Message = require("./models/Message");
 const { fs } = require("file-system");
+const MessageSeen = require("./models/MessageSeen");
 const Buffer = require("buffer/").Buffer;
 
 require("dotenv").config();
@@ -42,11 +43,11 @@ const server = app.listen(PORT, () => {
 	console.log("Server is live at", PORT);
 });
 
-//web socket
+//web socket server
 const wss = new ws.WebSocketServer({ server });
 
 wss.on("connection", (connection, req) => {
-	console.log("A new User has connected", connection.id);
+	console.log("Socket connected");
 
 	function notifyAboutOnlinePeople() {
 		//notify everyone about online people (when someone connects)
@@ -105,9 +106,10 @@ wss.on("connection", (connection, req) => {
 
 	connection.on("message", async (message) => {
 		const messageData = JSON.parse(message.toString());
-		// console.log(messageData);
-		const { recipient, text, file, sentAt } = messageData;
+		// console.log("md-> ",messageData);
+		const { recipient, text, file, sentAt, ptachala, seenAt } = messageData;
 		let filename = null;
+
 		if (file) {
 			// console.log(file);
 			const parts = file.info.split(".");
@@ -120,6 +122,7 @@ wss.on("connection", (connection, req) => {
 			});
 		}
 		if (recipient && (text || file)) {
+			//save in DB
 			const messageDoc = await Message.create({
 				sender: connection.userId,
 				recipient: recipient,
@@ -143,8 +146,42 @@ wss.on("connection", (connection, req) => {
 					)
 				);
 		}
+
+		if (ptachala && seenAt) {
+			// seenAt -> is(dekha) user ka seen time 
+			const messageSeenDetails = await MessageSeen.findOne({
+				dekha: connection.userId,
+				ptachala: ptachala,
+			});
+
+			if (messageSeenDetails) {
+				await MessageSeen.findOneAndUpdate(
+					{ dekha: connection.userId, ptachala: ptachala },
+					{ seenAt: seenAt }
+				);
+			} else {
+				await MessageSeen.create({
+					dekha: connection.userId,
+					ptachala: ptachala,
+					seenAt: seenAt,
+				});
+			}
+			// console.log("ptachala");
+
+			[...wss.clients]
+				.filter((c) => c.userId === ptachala)
+				.forEach((c) =>
+					c.send(
+						JSON.stringify({
+							dekha: connection.userId,
+							ptachala: ptachala,
+							seenAt: seenAt,
+						})
+					)
+				);
+		}
 	});
 
-	//notify online people
+	//notify online people to every client(socket)
 	notifyAboutOnlinePeople();
 });

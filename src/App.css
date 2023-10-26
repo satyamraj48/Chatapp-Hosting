@@ -50,17 +50,16 @@ input::-webkit-inner-spin-button {
 }
 
 .wrapper {
-	display: hidden;
 	visibility: hidden;
-	opacity: 0;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	z-index: 1000;
+	background-color: rgb(225, 236, 255);
+	opacity: 0;
 	position: absolute;
 	inset: 0;
-	background-color: rgb(225, 236, 255);
-	animation: logoZoom 2s ease-in 1;
+	z-index: 1000;
+	animation: logoZoom 1s ease-in 1;
 }
 @keyframes logoZoom {
 	0% {
@@ -73,12 +72,13 @@ input::-webkit-inner-spin-button {
 		transform: scale(1, 1);
 		filter: blur(0px);
 	}
-	100% {
+	90% {
 		transform: scale3d(20, 20, 20);
-		filter: blur(40px);
-		display: hidden;
-		visibility: hidden;
+		filter: blur(10px);
 		opacity: 0;
+	}
+	100% {
+		display: none;
 	}
 }
 

@@ -12,6 +12,7 @@ import { HiUser } from "react-icons/hi2";
 import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
 import { IoMdArrowBack } from "react-icons/io";
+import { LuTriangleRight } from "react-icons/lu";
 import LogoAnimate from "./LogoAnimate";
 
 function Chat() {
@@ -25,6 +26,7 @@ function Chat() {
 	const [loadingMsg, setLoadingMsg] = useState(false);
 	const [isScroll, setIsScroll] = useState(false);
 	const [showList, setShowList] = useState(true);
+	const [messageSeenAt, setMessageSeenAt] = useState(null);
 
 	const divUnderMessages = useRef();
 
@@ -34,13 +36,42 @@ function Chat() {
 		connectToWs();
 	}, []);
 
+	//to be understand
+	useEffect(() => {
+		ws?.addEventListener("message", handleMessage);
+		return () => ws?.removeEventListener("message", handleMessage);
+	}, [selectedUserId]);
+
+	function handleMessage(event) {
+		const messageData = JSON.parse(event.data);
+		// console.log("selected-> ", selectedUserId);
+		// if (!("online" in messageData)) console.log("messageData-> ", messageData);
+
+		if ("online" in messageData) {
+			showOnlinePeople(messageData.online);
+		} else if ("text" in messageData) {
+			// console.log("select - ", selectedUserId);
+			if (messageData.sender === selectedUserId) {
+				// console.log("message set");
+				setMessages((prev) => [...prev, { ...messageData }]);
+			}
+		} else if ("seenAt" in messageData) {
+			// console.log(selectedUserId, " ____ ", messageData.dekha);
+			if (selectedUserId === messageData.dekha) {
+				let date = new Date(messageData.seenAt);
+				let time = date.getTime();
+				// console.log("seenAt Recieved", time);
+				setMessageSeenAt(time);
+			}
+		}
+	}
 	function connectToWs() {
 		const toastId = toast.loading("Connecting...");
 		const ws = new WebSocket(
-			`${1 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
+			`${0 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
 		);
 		setWs(ws);
-		ws.addEventListener("message", handleMessage);
+		// ws.addEventListener("message", handleMessage);
 		ws.addEventListener("close", () => {
 			setTimeout(() => {
 				console.log("Disconnected. Trying to reconnect...");
@@ -49,18 +80,6 @@ function Chat() {
 		});
 		console.log("Now Connected!");
 		toast.dismiss(toastId);
-	}
-
-	function handleMessage(event) {
-		const messageData = JSON.parse(event.data);
-		// console.log("messageData-> ", messageData);
-		if ("online" in messageData) {
-			showOnlinePeople(messageData.online);
-		} else if ("text" in messageData) {
-			if (messageData.sender === selectedUserId) {
-				setMessages((prev) => [...prev, { ...messageData }]);
-			}
-		}
 	}
 
 	function sendMessage(e, file = null) {
@@ -123,25 +142,67 @@ function Chat() {
 		// console.log(e.target.files[0]);
 	}
 
+	function isInViewport(element) {
+		if (element) {
+			const rect = element.getBoundingClientRect();
+			return (
+				rect.top >= 0 &&
+				rect.left >= 0 &&
+				rect.bottom <=
+					(window.innerHeight || document.documentElement.clientHeight) &&
+				rect.right <=
+					(window.innerWidth || document.documentElement.clientWidth)
+			);
+		} else return false;
+	}
+
+	const messagesWithoutDupes = uniqBy(messages, "_id");
+
+	//agr ptachala user ka message is user k viewport mei h,
+	// to ptachala ko bta do is user ka seen time.
+	function sendSeenToPtachala() {
+		if (selectedUserId) {
+			const box = document.querySelector(".seenBox");
+			const isInViewportBox = isInViewport(box);
+			// console.log("isinViewport->  ", isInViewportBox);
+			// console.log("viewport selected->  ", selectedUserId);
+			if (isInViewportBox && selectedUserId) {
+				ws.send(
+					JSON.stringify({
+						ptachala: selectedUserId,
+						seenAt: new Date(),
+					})
+				);
+			}
+		}
+	}
+
+	//scroll when message received or sent
 	useEffect(() => {
 		goToBottom();
-		const box = document.querySelector(".seenBox");
-		const isSeen = isInViewport(box);
-		console.log("isSeen->  ", isSeen);
+		sendSeenToPtachala();
 	}, [messages]);
 
+	// api call to get user messages
 	useEffect(() => {
 		const getUserMessages = async () => {
 			if (selectedUserId) {
 				// setLoading(true);
+				// console.log("selected in api-> ", selectedUserId);
 				const response = await axios.get("/auth/messages/" + selectedUserId);
 				if (response.data.success) setMessages(response.data.data);
+
+				const res = await axios.get("/auth/messageseen/" + selectedUserId);
+				if (res.data.success)
+					setMessageSeenAt(new Date(res.data.data?.seenAt).getTime());
+				// console.log("res-> ", res.data.data);
 				// setLoading(false);
 			}
 		};
 		getUserMessages();
 	}, [selectedUserId]);
 
+	//api call to set offline people
 	useEffect(() => {
 		axios.get("/auth/people").then((res) => {
 			const offlinePeopleArr = res.data.data
@@ -157,8 +218,7 @@ function Chat() {
 		});
 	}, [onlinePeople]);
 
-	const messagesWithoutDupes = uniqBy(messages, "_id");
-
+	//scroll to bottom of messages
 	function goToBottom() {
 		const div = divUnderMessages.current;
 		if (div) {
@@ -171,6 +231,10 @@ function Chat() {
 		const pageWidth = window.matchMedia("(min-width: 768px)");
 		if (pageWidth.matches) {
 			setShowList(true);
+		}
+		const pageWidth2 = window.matchMedia("(max-width: 767px)");
+		if (pageWidth2.matches && selectedUserId) {
+			setShowList(false);
 		}
 	};
 	window.addEventListener("resize", getWindowSize);
@@ -207,15 +271,13 @@ function Chat() {
 		});
 	}
 
-	function isInViewport(element) {
-		const rect = element.getBoundingClientRect();
-		return (
-			rect.top >= 0 &&
-			rect.left >= 0 &&
-			rect.bottom <=
-				(window.innerHeight || document.documentElement.clientHeight) &&
-			rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-		);
+	//check message seen or not
+	function checkIsSeen(sentAt, index) {
+		const val = messageSeenAt >= new Date(sentAt).getTime() ? true : false;
+		// if (index === messagesWithoutDupes.length - 1) {
+		// 	console.log(messageSeenAt, "--", new Date(sentAt).getTime(), "->", val);
+		// }
+		return val;
 	}
 
 	return (
@@ -226,15 +288,15 @@ function Chat() {
 			<LogoAnimate />
 
 			<button
-				className={`absolute left-[54%] top-20 ${
+				className={`absolute left-[54%] top-4 ${
 					!showList && "hidden"
-				} md:hidden z-[250] text-2xl active:scale-95`}
-				onClick={() => setShowList(!showList)}
+				} md:hidden z-[260] text-2xl active:scale-90`}
+				onClick={() => setShowList(false)}
 			>
-				<RxCross2 className="text-blue-500 hover:bg-blue-100 hover:rounded-full" />
+				<RxCross2 className="text-blue-300 hover:bg-blue-600 hover:rounded-full" />
 			</button>
 			<div
-				className={`pt-6 absolute md:static z-[200] h-screen w-[60%] md:w-[330px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
+				className={`pt-6 absolute md:static z-[250] h-screen w-[60%] md:w-[330px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 					showList
 						? "translate-x-0 opacity-100"
 						: "translate-x-[-100%] opacity-0"
@@ -242,28 +304,35 @@ function Chat() {
 			>
 				{/* logo and contacts */}
 				<div className="flex-grow">
+					<div></div>
 					<Logo />
 					{/* contacts list */}
 					<div className="space-y-0">
-						{Object.keys(onlinePeople)?.map((userId) => (
+						{Object.keys(onlinePeople).map((userId) => (
 							<Contact
 								key={userId}
-								userId={userId}
+								id={userId}
 								online={true}
-								selected={userId === selectedUserId}
-								onClick={() => setSelectedUserId(userId)}
 								username={onlinePeople[userId]}
+								onClick={() => {
+									setSelectedUserId(userId);
+									// console.log("userId: ", userId);
+								}}
+								selected={userId === selectedUserId}
 								setShowList={setShowList}
 							/>
 						))}
-						{Object.keys(offlinePeople)?.map((userId) => (
+						{Object.keys(offlinePeople).map((userId) => (
 							<Contact
 								key={userId}
-								userId={userId}
+								id={userId}
 								online={false}
-								selected={userId === selectedUserId}
-								onClick={(id) => setSelectedUserId(id)}
 								username={offlinePeople[userId].username}
+								onClick={() => {
+									setSelectedUserId(userId);
+									// console.log("Offline userId: ", userId);
+								}}
+								selected={userId === selectedUserId}
 								setShowList={setShowList}
 							/>
 						))}
@@ -287,19 +356,36 @@ function Chat() {
 
 			{/* selected user message section */}
 			<div
-				className="relative w-full md:w-[calc(100%-330px)] bg-doodle-pattern bg-contain overflow-x-clip"
+				className="relative w-full md:w-[calc(100%-330px)] bg-doodle-pattern bg-contain"
 				onClick={() => setIsScroll(!isScroll)}
 			>
-				<div className="fixed z-[200] top-0 w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
+				<div className="absolute z-[200] top-0 w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
 					<button
 						className="ml-2 md:hidden"
 						onClick={() => setShowList(!showList)}
 					>
 						<IoMdArrowBack className="text-[16px]" />
 					</button>
-					<p className="text-xl capitalize">{username}</p>
+					<div className="flex flex-col items-start">
+						<p
+							className={`text-xl capitalize ${
+								selectedUserId ? "opacity-100" : "opacity-0"
+							} transition-all duration-200`}
+						>
+							{onlinePeople[selectedUserId] ??
+								offlinePeople[selectedUserId]?.username}
+						</p>
+						<span
+							className={`ml-1 text-xs ${
+								selectedUserId ? "opacity-100" : "opacity-0"
+							} transition-all duration-700`}
+						>
+							{selectedUserId &&
+								(onlinePeople[selectedUserId] ? "online" : "offline")}
+						</span>
+					</div>
 				</div>
-				<div className="seenBox px-2 flex-grow">
+				<div className="h-full px-2 flex-grow">
 					{!selectedUserId && (
 						<div className="h-full flex flex-col gap-2 items-center justify-center">
 							<div className="text-gray-300">No selected person</div>
@@ -316,9 +402,9 @@ function Chat() {
 									<div className="spinner2"></div>
 								</div>
 							) : (
-								<div className="relative h-[calc(100vh-4rem)] bg-yellow-20">
+								<div className="relative h-[calc(100vh-4rem)] ">
 									<div className="absolute inset-0 px-2 space-y-2 overflow-y-scroll overflow-x-hidden">
-										<div className="w-full h-[30px]"></div>
+										<div className="w-full h-[40px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
 											<div
 												key={index}
@@ -328,7 +414,7 @@ function Chat() {
 											>
 												<div className="grid place-content-center">
 													<p
-														className={`my-10 px-2 py-[2px] bg-white rounded-lg text-gray-900 text-sm shadow-md shadow-black/10 ${
+														className={`my-8 px-2 py-[2px] bg-white rounded-lg text-gray-900 text-sm shadow-md shadow-black/10 ${
 															val != currentMessageDate(message?.sentAt)
 																? "block"
 																: "hidden"
@@ -339,7 +425,7 @@ function Chat() {
 												</div>
 
 												<div
-													className={`inline-block max-w-[70%] shadow-md shadow-black/10 ${
+													className={`seenBox relative inline-block max-w-[70%] shadow-md shadow-black/10 ${
 														message.sender === id
 															? "bg-blue-500 text-white"
 															: "bg-white text-black"
@@ -349,7 +435,15 @@ function Chat() {
 														"bg-gray-400"
 													} text-sm text-left rounded-md space-y-`}
 												>
-													<div className="bg-red-600 w- h-"></div>
+													<div
+														className={`absolute z-[10] ${
+															message.sender === id
+																? "-right-2 rotate-180 text-blue-500"
+																: "-left-2 -rotate-90 text-white"
+														} w-3 h-3`}
+													>
+														<LuTriangleRight />
+													</div>
 													{loadingMsg &&
 													index === messagesWithoutDupes.length - 1 ? (
 														<div className="animate-pulse text-white tracking-wide px-5 py-2">
@@ -399,15 +493,17 @@ function Chat() {
 																	}
 																)}
 
-																{true && (
-																	<span
-																		className={`text-[14px] ${
-																			message.sender === id ? "" : "hidden"
-																		} ${true && "text-yellow-200"}`}
-																	>
-																		<RiCheckDoubleFill />
-																	</span>
-																)}
+																<span
+																	className={`text-[14px] ${
+																		message.sender !== id && "hidden"
+																	} ${
+																		checkIsSeen(message?.sentAt, index)
+																			? "text-white"
+																			: "text-gray-400"
+																	} `}
+																>
+																	<RiCheckDoubleFill />
+																</span>
 															</p>
 														</div>
 													)}
@@ -442,7 +538,7 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="px-3 py-2 flex-grow bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="px-3 py-2 w-[80%] md:w-full flex-1 bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
