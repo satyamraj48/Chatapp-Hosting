@@ -289,7 +289,7 @@ function Chat() {
 			<LogoAnimate />
 
 			<button
-				className={`absolute left-[54%] top-4 ${
+				className={`absolute left-[50%] sm:left-[54%] top-4 ${
 					!showList && "hidden"
 				} md:hidden z-[260] text-2xl active:scale-90`}
 				onClick={() => setShowList(false)}
