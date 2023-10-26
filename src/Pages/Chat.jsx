@@ -156,6 +156,7 @@ function Chat() {
 		} else return false;
 	}
 
+	//remove duplicate messages	
 	const messagesWithoutDupes = uniqBy(messages, "_id");
 
 	//agr ptachala user ka message is user k viewport mei h,
@@ -476,7 +477,7 @@ function Chat() {
 															{/* date and seen(tick) */}
 															<p
 																className={`ml-2 ${
-																	message.text.length > 30
+																	message.text.length > 30 || message.file
 																		? "flex"
 																		: "inline-flex"
 																} items-center justify-end gap-[2px] text-[10px] ${
