@@ -4,6 +4,9 @@ import axios from "axios";
 import { UserContext } from "./Pages/UserContext";
 import { useContext, useEffect } from "react";
 import Chat from "./Pages/Chat";
+import { Routes, Route } from "react-router-dom";
+import Home from "./Pages/Home";
+import Room from "./Pages/Room";
 
 function App() {
 	axios.defaults.baseURL = import.meta.env.VITE_REACT_APP_BASE_URL;
@@ -29,10 +32,20 @@ function App() {
 	}, []);
 
 	if (username) {
-		return <Chat />;
+		return (
+			<Routes>
+				<Route path="/" element={<Chat />} />
+				<Route path="/video" element={<Home />} />
+				<Route path="/room/:roomId" element={<Room />} />
+			</Routes>
+		);
 	}
 
-	return <RegisterAndLoginForm />;
+	return (
+		<Routes>
+			<Route path="/" element={<RegisterAndLoginForm />} />
+		</Routes>
+	);
 }
 
 export default App;

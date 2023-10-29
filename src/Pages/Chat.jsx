@@ -13,7 +13,9 @@ import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
 import { IoMdArrowBack } from "react-icons/io";
 import { LuTriangleRight } from "react-icons/lu";
+import { BiSolidVideo } from "react-icons/bi";
 import LogoAnimate from "./LogoAnimate";
+import { useNavigate } from "react-router-dom";
 
 function Chat() {
 	const [ws, setWs] = useState(null);
@@ -156,7 +158,7 @@ function Chat() {
 		} else return false;
 	}
 
-	//remove duplicate messages	
+	//remove duplicate messages
 	const messagesWithoutDupes = uniqBy(messages, "_id");
 
 	//agr ptachala user ka message is user k viewport mei h,
@@ -281,6 +283,37 @@ function Chat() {
 		return val;
 	}
 
+	const navigate = useNavigate();
+	const { socket } = useContext(UserContext);
+
+	function handleVideoCall() {
+		// navigate(`/room/${roomId}`);
+		const roomId = 1;
+		const emailId =
+			onlinePeople[selectedUserId] ??
+			offlinePeople[selectedUserId]?.username + "@gmail.com";
+		if (roomId && emailId) {
+			socket.emit("room:join", { roomId, emailId });
+		}
+		navigate("/video");
+	}
+
+	useEffect(() => {
+		if (selectedUserId) {
+			const lastMessage = messagesWithoutDupes[messagesWithoutDupes.length - 1];
+			if (lastMessage?.sender !== id && lastMessage?.text === "call2") {
+				const roomId = 1;
+				const emailId =
+					onlinePeople[selectedUserId] ??
+					offlinePeople[selectedUserId]?.username + "@gmail.com";
+				if (roomId && emailId) {
+					socket.emit("room:join", { roomId, emailId });
+				}
+				navigate("/video");
+			}
+		}
+	}, [messagesWithoutDupes]);
+
 	return (
 		<div
 			className="relative h-screen flex tracking-wide font-Poppins"
@@ -360,31 +393,43 @@ function Chat() {
 				className="relative w-full md:w-[calc(100%-330px)] bg-doodle-pattern bg-contain"
 				onClick={() => setIsScroll(!isScroll)}
 			>
-				<div className="absolute z-[200] top-0 w-full h-[60px] pl-2 flex items-center gap-1 bg-blue-700 text-white">
-					<button
-						className="ml-2 md:hidden"
-						onClick={() => setShowList(!showList)}
-					>
-						<IoMdArrowBack className="text-[16px]" />
-					</button>
-					<div className="flex flex-col items-start">
-						<p
-							className={`text-xl capitalize ${
-								selectedUserId ? "opacity-100" : "opacity-0"
-							} transition-all duration-200`}
+				<div className="absolute z-[200] top-0 w-full h-[60px] pl-2 flex items-center justify-between gap-1 bg-blue-700 text-white">
+					<div className="flex items-center gap-3">
+						<button
+							className="ml-2 md:hidden"
+							onClick={() => setShowList(!showList)}
 						>
-							{onlinePeople[selectedUserId] ??
-								offlinePeople[selectedUserId]?.username}
-						</p>
-						<span
-							className={`ml-1 text-xs ${
-								selectedUserId ? "opacity-100" : "opacity-0"
-							} transition-all duration-700`}
-						>
-							{selectedUserId &&
-								(onlinePeople[selectedUserId] ? "online" : "offline")}
-						</span>
+							<IoMdArrowBack className="text-[16px]" />
+						</button>
+						<div className="flex flex-col items-start">
+							<p
+								className={`text-xl capitalize ${
+									selectedUserId ? "opacity-100" : "opacity-0"
+								} transition-all duration-200`}
+							>
+								{onlinePeople[selectedUserId] ??
+									offlinePeople[selectedUserId]?.username}
+							</p>
+							<span
+								className={`ml-1 text-xs ${
+									selectedUserId ? "opacity-100" : "opacity-0"
+								} transition-all duration-700`}
+							>
+								{selectedUserId &&
+									(onlinePeople[selectedUserId] ? "online" : "offline")}
+							</span>
+						</div>
 					</div>
+					{selectedUserId && (
+						<div className="mr-6">
+							<button
+								className="drop-shadow-md hover:bg-blue-500 rounded-full p-1 active:scale-95"
+								onClick={handleVideoCall}
+							>
+								<BiSolidVideo className="text-xl" />
+							</button>
+						</div>
+					)}
 				</div>
 				<div className="h-full px-2 flex-grow">
 					{!selectedUserId && (

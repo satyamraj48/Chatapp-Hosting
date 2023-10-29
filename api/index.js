@@ -1,4 +1,6 @@
 const express = require("express");
+const bodyParser = require("body-parser");
+const { Server } = require("socket.io");
 const app = express();
 const { dbConnect } = require("./config/database");
 const cookieParser = require("cookie-parser");
@@ -13,6 +15,7 @@ const Buffer = require("buffer/").Buffer;
 
 require("dotenv").config();
 const PORT = process.env.PORT;
+const PORT2 = process.env.PORT2;
 
 //databse connect
 dbConnect();
@@ -20,6 +23,7 @@ dbConnect();
 //middlewares
 app.use(express.json());
 app.use(cookieParser());
+app.use(bodyParser.json());
 app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(
 	cors({
@@ -39,8 +43,46 @@ app.get("/", (req, res) => {
 	});
 });
 
+//initiate server
 const server = app.listen(PORT, () => {
 	console.log("Server is live at", PORT);
+});
+
+//initiate socket io
+const io = new Server(PORT2, {
+	cors: true,
+});
+
+const emailToSocketIdMap = new Map();
+const socketIdToEmailMap = new Map();
+
+io.on("connection", (socket) => {
+	console.log("socket io", socket.id);
+
+	socket.on("room:join", ({ roomId, emailId }) => {
+		console.log("User -> ", emailId, "Joined Room -> ", roomId);
+		emailToSocketIdMap.set(emailId, socket.id);
+		socketIdToEmailMap.set(socket.id, emailId);
+		io.to(roomId).emit("user:joined", { emailId, id: socket.id });
+		socket.join(roomId);
+		io.to(socket.id).emit("room:join", { roomId, emailId });
+	});
+
+	socket.on("user:call", ({ to, offer }) => {
+		io.to(to).emit("incoming:call", { from: socket.id, offer });
+	});
+
+	socket.on("call:accepted", ({ to, ans }) => {
+		io.to(to).emit("call:accepted", { from: socket.id, ans });
+	});
+
+	socket.on("peer:nego:needed", ({ to, offer }) => {
+		io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
+	});
+
+	socket.on("peer:nego:done", ({ to, ans }) => {
+		io.to(to).emit("peer:nego:final", { from: socket.id, ans });
+	});
 });
 
 //web socket server
@@ -148,7 +190,7 @@ wss.on("connection", (connection, req) => {
 		}
 
 		if (ptachala && seenAt) {
-			// seenAt -> is(dekha) user ka seen time 
+			// seenAt -> is(dekha) user ka seen time
 			const messageSeenDetails = await MessageSeen.findOne({
 				dekha: connection.userId,
 				ptachala: ptachala,
