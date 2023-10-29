@@ -7,7 +7,7 @@ function UserContextProvider({ children }) {
 	const [username, setUsername] = useState(null);
 	const [id, setId] = useState(null);
 
-	const socket = useMemo(() => io("localhost:8000"), []);
+	const socket = useMemo(() => io(`${import.meta.env.VITE_REACT_APP_VIDEO_URL}`), []);
 
 	const peer = useMemo(
 		() =>
