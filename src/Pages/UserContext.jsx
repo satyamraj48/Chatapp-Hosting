@@ -9,7 +9,7 @@ function UserContextProvider({ children }) {
 	const [id, setId] = useState(null);
 
 	const socket = useMemo(
-		() => io(`${import.meta.env.VITE_REACT_APP_VIDEO_URL}`),
+		() => io(`${import.meta.env.VITE_REACT_APP_WS_URL}`),
 		[]
 	);
 
