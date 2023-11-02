@@ -11,7 +11,7 @@ import Contact from "./Contact";
 import { HiUser } from "react-icons/hi2";
 import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
-import { IoIosCall, IoMdArrowBack } from "react-icons/io";
+import { IoIosCall, IoMdArrowBack, IoMdCall } from "react-icons/io";
 import { LuTriangleRight } from "react-icons/lu";
 import { BiSolidVideo } from "react-icons/bi";
 import LogoAnimate from "./LogoAnimate";
@@ -465,7 +465,7 @@ function Chat() {
 								className="drop-shadow-md hover:bg-blue-500 rounded-full p-1 active:scale-95"
 								onClick={handleAudioCall}
 							>
-								<IoIosCall className="text-xl" />
+								<IoMdCall className="text-xl" />
 							</button>
 							<button
 								className="drop-shadow-md hover:bg-blue-500 rounded-full p-1 active:scale-95"

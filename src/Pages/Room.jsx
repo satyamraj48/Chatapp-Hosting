@@ -180,7 +180,7 @@ function Room() {
 				</div>
 			)}
 
-			<div className="mt-1 mb-2 h-full bg-pink-30 flex flex-col md:flex-row flex-wrap items-center justify-center gap-1">
+			<div className="mt-1 mb-2 h-full bg-pink-30 flex flex-col md:flex-row items-center justify-center gap-1">
 				<div className="drop-shadow-md">
 					{myStream && (
 						<>
@@ -206,6 +206,7 @@ function Room() {
 								height={"100%"}
 								url={remoteStream}
 								playing
+								muted
 							/>
 						</>
 					)}
