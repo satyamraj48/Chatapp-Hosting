@@ -53,6 +53,10 @@ function Room() {
 		navigate("/");
 		window.location.reload();
 	}
+	function handleNewUserJoined({ emailId, id }) {
+		console.log("Room mei-> new user joined room", emailId, "s-id-> ", id);
+		setRemoteSocketId(id);
+	}
 	//audio call button click
 	const handleAudioCallUser = async () => {
 		const stream = await navigator.mediaDevices.getUserMedia({
@@ -80,6 +84,7 @@ function Room() {
 	}
 
 	useEffect(() => {
+		socket.on("user:joined", handleNewUserJoined);
 		socket.on("incoming:call", handleIncomingCall);
 		socket.on("call:accepted", handleCallAccepted);
 		socket.on("peer:nego:needed", handleNegotiationIncoming);
@@ -88,6 +93,7 @@ function Room() {
 		socket.on("remote:person:joined:flag", handleRemotePersonJoined);
 
 		return () => {
+			socket.off("user:joined", handleNewUserJoined);
 			socket.off("incoming:call", handleIncomingCall);
 			socket.off("call:accepted", handleCallAccepted);
 			socket.off("peer:nego:needed", handleNegotiationIncoming);
@@ -102,6 +108,7 @@ function Room() {
 		handleNegotiationIncoming,
 		handleCallAccepted,
 		handleIncomingCall,
+		handleNewUserJoined,
 		socket,
 	]);
 
@@ -159,7 +166,9 @@ function Room() {
 			{!remoteStream && (
 				<div className="w-[50%] h-[100px] flex items-center justify-center">
 					<div className="w-[60%] h-[50%] backdrop-blur-md rounded-lg border-2 text-gray-700 flex flex-col items-center justify-center gap-2">
-						{videoCall && !remoteStream && <div className=" text-sm animate-ping">Calling...</div>}
+						{videoCall && !remoteStream && (
+							<div className=" text-sm animate-ping">Calling...</div>
+						)}
 					</div>
 				</div>
 			)}
