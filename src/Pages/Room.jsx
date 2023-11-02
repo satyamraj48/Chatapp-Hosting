@@ -148,6 +148,7 @@ function Room() {
 	}, [handleTrackEvent, peer]);
 
 	const navigate = useNavigate();
+
 	const cancelVideoCall = () => {
 		setMyStream(null);
 		setRemoteStream(null);
@@ -173,7 +174,7 @@ function Room() {
 				</div>
 			)}
 
-			<div className="mt-1 mb-2 bg-pink-30 flex flex-col md:flex-row items-center gap-1">
+			<div className="mt-1 mb-2 h-full bg-pink-30 flex flex-col md:flex-row flex-wrap items-center justify-center gap-1">
 				<div className="">
 					{myStream && (
 						<>
@@ -202,30 +203,32 @@ function Room() {
 					)}
 				</div>
 				<div className="flex md:flex-col gap-5">
-					{remoteStream && (
+					{(!remoteStream && !videoCall) && (
 						<p className="text-xl text-center">
 							Incoming call
 							<span className="animate-pulse tracking-widest">...</span>
 						</p>
 					)}
-					{remoteStream && (
-						<div className="flex items-center gap-8">
+					<div className="flex items-center gap-8">
+						{(!remoteStream && !videoCall) && (
 							<button
 								className="bg-green-500 text-white rounded-md px-3 py-1 animate-pulse"
 								onClick={sendStreams}
 							>
 								Accept
 							</button>
-							{(remoteStream || videoCall) && (
-								<button
-									className="bg-red-500 text-white rounded-lg px-3 py-1"
-									onClick={cancelVideoCall}
-								>
-									Cancel
-								</button>
-							)}
-						</div>
-					)}
+						)}
+						{(remoteStream || videoCall) && (
+							<button
+								className={`${
+									videoCall ? "mt-10" : "ml-10"
+								} bg-red-500 text-white rounded-lg px-3 py-1`}
+								onClick={cancelVideoCall}
+							>
+								Cancel
+							</button>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>
