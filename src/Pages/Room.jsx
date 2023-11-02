@@ -82,7 +82,11 @@ function Room() {
 	function handleRemotePersonJoined({ joined }) {
 		if (joined && remoteSocketId) {
 			console.log("7 handleRemotePersonJoined recieved and start video call");
-			handleVideoCallUser();
+			if (videoCall) {
+				handleVideoCallUser();
+			} else if (audioCall) {
+				handleAudioCallUser();
+			}
 		}
 	}
 
@@ -170,14 +174,14 @@ function Room() {
 			</h4>
 			{!remoteStream && (
 				<div className="w-[30%] max-w-[100px] h-[50px] bg-blue-900 shadow-md rounded-lg border text-white flex items-center justify-center">
-					{videoCall && !remoteStream && (
+					{(audioCall || videoCall) && !remoteStream && (
 						<div className=" text-md animate-pulse">Calling...</div>
 					)}
 				</div>
 			)}
 
 			<div className="mt-1 mb-2 h-full bg-pink-30 flex flex-col md:flex-row flex-wrap items-center justify-center gap-1">
-				<div className="drop-shadow-md relative">
+				<div className="drop-shadow-md">
 					{myStream && (
 						<>
 							{/* <p>My Stream</p> */}
@@ -187,12 +191,12 @@ function Room() {
 								height={"100%"}
 								url={myStream}
 								playing
-								muted
+								// muted
 							/>
 						</>
 					)}
 				</div>
-				<div className="drop-shadow-md relative">
+				<div className="drop-shadow-md">
 					{remoteStream && (
 						<>
 							{/* <p>Remote Stream</p> */}
@@ -207,14 +211,14 @@ function Room() {
 					)}
 				</div>
 				<div className="bg-pink-30 w-[100%] flex flex-col items-center justify-center">
-					{remoteStream && !videoCall && !callAccept && (
+					{remoteStream && (!audioCall || !videoCall) && !callAccept && (
 						<p className="bg-blue-800/70 shadow-md px-5 py-2 rounded-md text-md text-white font-semibold text-center">
 							Incoming call
 							<span className="animate-pulse tracking-widest">...</span>
 						</p>
 					)}
 					<div className="mt-8 flex items-center justify-around">
-						{remoteStream && !videoCall && !callAccept && (
+						{remoteStream && (!audioCall || !videoCall) && !callAccept && (
 							<button
 								className="bg-green-500 shadow-md text-white rounded-full p-2 animate-pulse"
 								onClick={sendStreams}
@@ -222,10 +226,10 @@ function Room() {
 								<BiSolidPhoneCall className="text-3xl" />
 							</button>
 						)}
-						{(remoteStream || videoCall) && (
+						{(remoteStream || audioCall || videoCall) && (
 							<button
 								className={`${
-									videoCall ? "mt-10" : "ml-10"
+									audioCall || videoCall ? "mt-10" : "ml-10"
 								} bg-red-500 shadow-md text-white rounded-full p-2`}
 								onClick={cancelVideoCall}
 							>

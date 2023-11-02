@@ -11,7 +11,7 @@ import Contact from "./Contact";
 import { HiUser } from "react-icons/hi2";
 import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
-import { IoMdArrowBack } from "react-icons/io";
+import { IoIosCall, IoMdArrowBack } from "react-icons/io";
 import { LuTriangleRight } from "react-icons/lu";
 import { BiSolidVideo } from "react-icons/bi";
 import LogoAnimate from "./LogoAnimate";
@@ -31,7 +31,7 @@ function Chat() {
 	const divUnderMessages = useRef();
 
 	const { id, username, setId, setUsername, socket } = useContext(UserContext);
-	const { setAudioCall, setVideoCall, setRemotePersonJoin, setRemoteSocketId } =
+	const { setAudioCall, setVideoCall, setRemoteSocketId } =
 		useContext(CallContext);
 	const navigate = useNavigate();
 
@@ -460,7 +460,13 @@ function Chat() {
 						</div>
 					</div>
 					{selectedUserId && (
-						<div className="mr-6">
+						<div className="mx-6 bg-pink-30 flex items-center gap-2">
+							<button
+								className="drop-shadow-md hover:bg-blue-500 rounded-full p-1 active:scale-95"
+								onClick={handleAudioCall}
+							>
+								<IoIosCall className="text-xl" />
+							</button>
 							<button
 								className="drop-shadow-md hover:bg-blue-500 rounded-full p-1 active:scale-95"
 								onClick={handleVideoCall}
