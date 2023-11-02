@@ -2,12 +2,16 @@ import React, { createContext, useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
 
 export const UserContext = createContext({});
+export const CallContext = createContext({});
 
 function UserContextProvider({ children }) {
 	const [username, setUsername] = useState(null);
 	const [id, setId] = useState(null);
 
-	const socket = useMemo(() => io(`${import.meta.env.VITE_REACT_APP_VIDEO_URL}`), []);
+	const socket = useMemo(
+		() => io(`${import.meta.env.VITE_REACT_APP_VIDEO_URL}`),
+		[]
+	);
 
 	const peer = useMemo(
 		() =>
@@ -68,7 +72,7 @@ function UserContextProvider({ children }) {
 		};
 	}, [handleTrackEvent, peer]);
 
-	const providedValue = {
+	const providedUserValue = {
 		username,
 		setUsername,
 		id,
@@ -82,9 +86,24 @@ function UserContextProvider({ children }) {
 		remoteStream,
 	};
 
+	const [audioCall, setAudioCall] = useState(false);
+	const [videoCall, setVideoCall] = useState(false);
+	const [remoteSocketId, setRemoteSocketId] = useState(null);
+
+	const providedCallValue = {
+		audioCall,
+		setAudioCall,
+		videoCall,
+		setVideoCall,
+		remoteSocketId,
+		setRemoteSocketId,
+	};
+
 	return (
-		<UserContext.Provider value={providedValue}>
-			{children}
+		<UserContext.Provider value={providedUserValue}>
+			<CallContext.Provider value={providedCallValue}>
+				{children}
+			</CallContext.Provider>
 		</UserContext.Provider>
 	);
 }

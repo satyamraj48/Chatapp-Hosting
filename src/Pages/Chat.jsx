@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import { GrAttachment } from "react-icons/gr";
 import Logo from "../components/core/ChatContacts/Logo";
-import { UserContext } from "./UserContext";
+import { CallContext, UserContext } from "./UserContext";
 import { BsArrowDownShort, BsArrowLeft } from "react-icons/bs";
 import { uniqBy } from "lodash";
 import axios from "axios";
@@ -18,7 +18,6 @@ import LogoAnimate from "./LogoAnimate";
 import { useNavigate } from "react-router-dom";
 
 function Chat() {
-	const [ws, setWs] = useState(null);
 	const [onlinePeople, setOnlinePeople] = useState({});
 	const [offlinePeople, setOfflinePeople] = useState([]);
 	const [selectedUserId, setSelectedUserId] = useState(null);
@@ -29,72 +28,142 @@ function Chat() {
 	const [isScroll, setIsScroll] = useState(false);
 	const [showList, setShowList] = useState(true);
 	const [messageSeenAt, setMessageSeenAt] = useState(null);
-
 	const divUnderMessages = useRef();
 
-	const { id, username, setId, setUsername } = useContext(UserContext);
+	const { id, username, setId, setUsername, socket } = useContext(UserContext);
+	const { setAudioCall, setVideoCall, setRemotePersonJoin, setRemoteSocketId } =
+		useContext(CallContext);
+	const navigate = useNavigate();
+
+	function handleOnlineUsers(data) {
+		// console.log("->>>> ", data);
+		showOnlinePeople(data.onlinePeople);
+	}
+	function handleIncomingMessage(messageData) {
+		// console.log("->>>> ", messageData);
+		if (messageData.sender === selectedUserId) {
+			// console.log("message set");
+			setMessages((prev) => [...prev, { ...messageData }]);
+		}
+	}
+	function handleSeenAtMessage(messageData) {
+		// console.log("seenAtMessage->>>> ", messageData);
+		if (selectedUserId === messageData.dekha) {
+			let date = new Date(messageData.seenAt);
+			let time = date.getTime();
+			// console.log("seenAt Recieved", time);
+			setMessageSeenAt(time);
+		}
+	}
+	function handleJoinRoom({ roomId, emailId, recipient }) {
+		if (recipient) {
+			console.log("3 sent video call to other");
+			socket.emit("outgoing:videoCall", {
+				sender: emailId,
+				to: recipient,
+				roomId,
+			});
+		}
+		navigate(`/room/${roomId}`);
+	}
+	function handleIncomingVideoCall({ sender, roomId }) {
+		const emailId = id + "@video.com";
+		if (roomId && emailId) {
+			console.log("5 video call aya and called room join");
+			socket.emit("room:join", { roomId, emailId });
+		}
+	}
+	function handleNewUserJoined({ emailId, id }) {
+		console.log("Chat mei-> new user joined room", emailId, "s-id-> ", id);
+		setRemoteSocketId(id);
+	}
 
 	useEffect(() => {
-		connectToWs();
-	}, []);
+		socket.on("user:joined", handleNewUserJoined);
+		socket.on("online:users", handleOnlineUsers);
+		socket.on("incoming:message", handleIncomingMessage);
+		socket.on("seenAt:message", handleSeenAtMessage);
+		socket.on("room:join", handleJoinRoom);
+		socket.on("incoming:videoCall", handleIncomingVideoCall);
 
-	//to be understand
-	useEffect(() => {
-		ws?.addEventListener("message", handleMessage);
-		return () => ws?.removeEventListener("message", handleMessage);
-	}, [selectedUserId]);
+		return () => {
+			socket.off("user:joined", handleNewUserJoined);
+			socket.off("online:users", handleOnlineUsers);
+			socket.off("incoming:message", handleIncomingMessage);
+			socket.off("seenAt:message", handleSeenAtMessage);
+			socket.off("room:join", handleJoinRoom);
+			socket.off("incoming:videoCall", handleIncomingVideoCall);
+		};
+	}, [
+		handleNewUserJoined,
+		handleIncomingVideoCall,
+		handleJoinRoom,
+		handleSeenAtMessage,
+		handleIncomingMessage,
+		handleOnlineUsers,
+		socket,
+	]);
 
-	function handleMessage(event) {
-		const messageData = JSON.parse(event.data);
-		// console.log("selected-> ", selectedUserId);
-		// if (!("online" in messageData)) console.log("messageData-> ", messageData);
-
-		if ("online" in messageData) {
-			showOnlinePeople(messageData.online);
-		} else if ("text" in messageData) {
-			// console.log("select - ", selectedUserId);
-			if (messageData.sender === selectedUserId) {
-				// console.log("message set");
-				setMessages((prev) => [...prev, { ...messageData }]);
-			}
-		} else if ("seenAt" in messageData) {
-			// console.log(selectedUserId, " ____ ", messageData.dekha);
-			if (selectedUserId === messageData.dekha) {
-				let date = new Date(messageData.seenAt);
-				let time = date.getTime();
-				// console.log("seenAt Recieved", time);
-				setMessageSeenAt(time);
+	function handleVideoCall() {
+		if (selectedUserId) {
+			const roomId = selectedUserId + "|" + id;
+			const emailId = id + "@video.com";
+			if (roomId && emailId) {
+				//do room join and send video call to selected userId
+				console.log("1 call gya idhar se");
+				socket.emit("room:join", {
+					roomId,
+					emailId,
+					recipient: selectedUserId,
+				});
+				setVideoCall(true);
+				setAudioCall(false);
 			}
 		}
 	}
-	function connectToWs() {
-		const toastId = toast.loading("Connecting...");
-		const ws = new WebSocket(
-			`${1 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
-		);
-		setWs(ws);
-		// ws.addEventListener("message", handleMessage);
-		ws.addEventListener("close", () => {
-			setTimeout(() => {
-				console.log("Disconnected. Trying to reconnect...");
-				connectToWs();
-			}, 1000);
-		});
-		console.log("Now Connected!");
-		toast.dismiss(toastId);
+	function handleAudioCall() {
+		if (selectedUserId) {
+			const roomId = selectedUserId + "|" + id;
+			const emailId = id + "@video.com";
+			if (roomId && emailId) {
+				//send video call to selected userId
+				socket.emit("room:join", {
+					roomId,
+					emailId,
+					recipient: selectedUserId,
+				});
+				setAudioCall(true);
+				setVideoCall(false);
+			}
+		}
 	}
+
+	// function connectToWs() {
+	// 	const toastId = toast.loading("Connecting...");
+	// 	const ws = new WebSocket(
+	// 		`${0 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
+	// 	);
+	// 	setWs(ws);
+	// 	ws.addEventListener("close", () => {
+	// 		setTimeout(() => {
+	// 			console.log("Disconnected. Trying to reconnect...");
+	// 			connectToWs();
+	// 		}, 1000);
+	// 	});
+	// 	console.log("Now Connected!");
+	// 	toast.dismiss(toastId);
+	// }
 
 	function sendMessage(e, file = null) {
 		if (e) e.preventDefault();
 		// setLoadingMsg(true);
-		ws.send(
-			JSON.stringify({
-				recipient: selectedUserId,
-				text: newMessageText,
-				file: file,
-				sentAt: new Date(),
-			})
-		);
+
+		socket.emit("outgoing:message", {
+			recipient: selectedUserId,
+			text: newMessageText,
+			file: file,
+			sentAt: new Date(),
+		});
 
 		if (!file) {
 			setMessages((prev) => [
@@ -128,7 +197,6 @@ function Chat() {
 
 	function handleLogout() {
 		axios.post("/auth/logout").then(() => {
-			setWs(null);
 			setId(null);
 			setUsername(null);
 		});
@@ -147,6 +215,10 @@ function Chat() {
 	function isInViewport(element) {
 		if (element) {
 			const rect = element.getBoundingClientRect();
+			// console.log("elem", rect.top);
+			// console.log("elem", rect.left);
+			// console.log("elem", rect.bottom);
+			// console.log("elem", rect.right);
 			return (
 				rect.top >= 0 &&
 				rect.left >= 0 &&
@@ -169,13 +241,11 @@ function Chat() {
 			const isInViewportBox = isInViewport(box);
 			// console.log("isinViewport->  ", isInViewportBox);
 			// console.log("viewport selected->  ", selectedUserId);
-			if (isInViewportBox && selectedUserId) {
-				ws.send(
-					JSON.stringify({
-						ptachala: selectedUserId,
-						seenAt: new Date(),
-					})
-				);
+			if (isInViewportBox || true) {
+				socket.emit("seen:message", {
+					ptachala: selectedUserId,
+					seenAt: new Date(),
+				});
 			}
 		}
 	}
@@ -282,37 +352,6 @@ function Chat() {
 		// }
 		return val;
 	}
-
-	const navigate = useNavigate();
-	const { socket } = useContext(UserContext);
-
-	function handleVideoCall() {
-		// navigate(`/room/${roomId}`);
-		const roomId = 1;
-		const emailId =
-			onlinePeople[selectedUserId] ??
-			offlinePeople[selectedUserId]?.username + "@gmail.com";
-		if (roomId && emailId) {
-			socket.emit("room:join", { roomId, emailId });
-		}
-		navigate("/video");
-	}
-
-	useEffect(() => {
-		if (selectedUserId) {
-			const lastMessage = messagesWithoutDupes[messagesWithoutDupes.length - 1];
-			if (lastMessage?.sender !== id && lastMessage?.text === "call2") {
-				const roomId = 1;
-				const emailId =
-					onlinePeople[selectedUserId] ??
-					offlinePeople[selectedUserId]?.username + "@gmail.com";
-				if (roomId && emailId) {
-					socket.emit("room:join", { roomId, emailId });
-				}
-				navigate("/video");
-			}
-		}
-	}, [messagesWithoutDupes]);
 
 	return (
 		<div

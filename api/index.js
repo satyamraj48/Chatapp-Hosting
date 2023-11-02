@@ -1,12 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { Server } = require("socket.io");
 const app = express();
 const { dbConnect } = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const userRoutes = require("./routes/User");
-const ws = require("ws");
 const jwt = require("jsonwebtoken");
 const Message = require("./models/Message");
 const { fs } = require("file-system");
@@ -15,7 +13,6 @@ const Buffer = require("buffer/").Buffer;
 
 require("dotenv").config();
 const PORT = process.env.PORT;
-const PORT2 = process.env.PORT2;
 
 //databse connect
 dbConnect();
@@ -43,32 +40,125 @@ app.get("/", (req, res) => {
 	});
 });
 
-//initiate server
-const server = app.listen(PORT, () => {
-	console.log("Server is live at", PORT);
+//initiate socket io
+const { createServer } = require("http");
+const httpServer = createServer(app);
+const { Server } = require("socket.io");
+
+const io = new Server(httpServer, {
+	cors: true,
 });
 
-//initiate socket io
-const io = new Server(PORT2, {
-	cors: true,
+httpServer.listen(PORT, () => {
+	console.log("Server is live at ", PORT);
 });
 
 const emailToSocketIdMap = new Map();
 const socketIdToEmailMap = new Map();
+const userIdToSocketIdMap = new Map();
+const userIdToUsernameMap = new Map();
 
 io.on("connection", (socket) => {
 	console.log("socket io", socket.id);
+	socket.isAlive = true;
 
-	socket.on("room:join", ({ roomId, emailId }) => {
-		console.log("User -> ", emailId, "Joined Room -> ", roomId);
+	// socket.timer = setInterval(() => {
+	// 	socket.ping();
+	// 	socket.expireTimer = setTimeout(() => {
+	// 		socket.isAlive = false;
+	// 		socket.terminate();
+	// 		notifyAboutOnlinePeople();
+	// 		// console.log("expire");
+	// 		clearInterval(socket.timer);
+	// 	}, 1000);
+	// }, 5000);
+
+	// socket.on("pong", () => {
+	// 	clearTimeout(socket.expireTimer);
+	// });
+
+	let cookies = null;
+	io.engine.on("headers", (headers, req) => {
+		if (!cookies) {
+			// console.log("cookie-> ", req.headers.cookie);
+			cookies = req.headers.cookie;
+			//read userId and username from their cookie for this connection
+			if (cookies) {
+				const tokenCookieString = cookies
+					.split(";")
+					.find((str) => str.startsWith("token="));
+				if (tokenCookieString) {
+					const token = tokenCookieString.split("=")[1];
+					if (token) {
+						try {
+							// console.log("token-> ", token);
+							const decode = jwt.verify(token, process.env.JWT_SECRET);
+							// console.log("decode-> ", decode);
+							const { id: userId, username } = decode;
+							socket.userId = userId;
+							socket.username = username;
+							//map user Id to Socket Id
+							userIdToSocketIdMap.set(userId, socket.id);
+							userIdToUsernameMap.set(userId, socket.username);
+							//notify all about online people
+							notifyAboutOnlinePeople();
+						} catch (error) {
+							console.log(error);
+						}
+					}
+				}
+			}
+		}
+	});
+
+	function notifyAboutOnlinePeople() {
+		//notify everyone about online people (when someone connects)
+		let onlinePeople = [];
+		for (const [userId, socketId] of userIdToSocketIdMap) {
+			onlinePeople = [
+				...onlinePeople,
+				{ userId: userId, username: userIdToUsernameMap.get(userId) },
+			];
+		}
+		for (const [userId, socketId] of userIdToSocketIdMap) {
+			io.to(socketId).emit("online:users", { onlinePeople });
+		}
+	}
+	// notifyAboutOnlinePeople();
+
+	socket.on("room:join", ({ roomId, emailId, recipient }) => {
+		console.log("2 6 User -> ", emailId, "Joined Room -> ", roomId);
 		emailToSocketIdMap.set(emailId, socket.id);
 		socketIdToEmailMap.set(socket.id, emailId);
 		io.to(roomId).emit("user:joined", { emailId, id: socket.id });
 		socket.join(roomId);
-		io.to(socket.id).emit("room:join", { roomId, emailId });
+		io.to(socket.id).emit("room:join", {
+			roomId,
+			emailId,
+			recipient,
+		});
+		if (roomId && !recipient) {
+			const userId = roomId.split("|")[1];
+			const socketId = userIdToSocketIdMap.get(userId);
+			console.log("6 room joined and inform start that other person joined");
+			io.to(socketId).emit("remote:person:joined:flag", { joined: userId });
+		}
+	});
+
+	socket.on("outgoing:videoCall", ({ sender, to, roomId }) => {
+		if (to) {
+			console.log("4 video call aaya idhar");
+			const socketId = userIdToSocketIdMap.get(to);
+			io.to(socketId).emit("incoming:videoCall", { sender, roomId });
+		}
+	});
+
+	socket.on("cancel:videoCall", ({ to }) => {
+		io.to(to).emit("cancel:videoCall", { from: socket.id });
 	});
 
 	socket.on("user:call", ({ to, offer }) => {
+		console.log("to-> ", to);
 		io.to(to).emit("incoming:call", { from: socket.id, offer });
 	});
 
@@ -83,73 +173,10 @@ io.on("connection", (socket) => {
 	socket.on("peer:nego:done", ({ to, ans }) => {
 		io.to(to).emit("peer:nego:final", { from: socket.id, ans });
 	});
-});
 
-//web socket server
-const wss = new ws.WebSocketServer({ server });
-
-wss.on("connection", (connection, req) => {
-	console.log("Socket connected");
-
-	function notifyAboutOnlinePeople() {
-		//notify everyone about online people (when someone connects)
-		[...wss.clients].forEach((client) => {
-			client.send(
-				JSON.stringify({
-					online: [...wss.clients].map((c) => ({
-						userId: c.userId,
-						username: c.username,
-					})),
-				})
-			);
-		});
-	}
-
-	connection.isAlive = true;
-
-	connection.timer = setInterval(() => {
-		connection.ping();
-		connection.expireTimer = setTimeout(() => {
-			connection.isAlive = false;
-			connection.terminate();
-			notifyAboutOnlinePeople();
-			// console.log("expire");
-			clearInterval(connection.timer);
-		}, 1000);
-	}, 5000);
-
-	connection.on("pong", () => {
-		clearTimeout(connection.expireTimer);
-	});
-
-	//read userId and username from their cookie for this connection
-	const cookies = req.headers.cookie;
-	if (cookies) {
-		const tokenCookieString = cookies
-			.split(";")
-			.find((str) => str.startsWith("token="));
-		if (tokenCookieString) {
-			const token = tokenCookieString.split("=")[1];
-			if (token) {
-				try {
-					// console.log("token-> ", token);
-					const decode = jwt.verify(token, process.env.JWT_SECRET);
-					// console.log("decode-> ", decode);
-					const { id: userId, username } = decode;
-
-					connection.userId = userId;
-					connection.username = username;
-				} catch (error) {
-					console.log(error);
-				}
-			}
-		}
-	}
-
-	connection.on("message", async (message) => {
-		const messageData = JSON.parse(message.toString());
-		// console.log("md-> ",messageData);
-		const { recipient, text, file, sentAt, ptachala, seenAt } = messageData;
+	socket.on("outgoing:message", async (messageData) => {
+		const { recipient, text, file, sentAt } = messageData;
+		console.log("in IO", text);
 		let filename = null;
 
 		if (file) {
@@ -166,64 +193,84 @@ wss.on("connection", (connection, req) => {
 		if (recipient && (text || file)) {
 			//save in DB
 			const messageDoc = await Message.create({
-				sender: connection.userId,
+				sender: socket.userId,
 				recipient: recipient,
 				text: text,
 				file: file ? filename : null,
 				sentAt: sentAt,
 			});
-
-			[...wss.clients]
-				.filter((c) => c.userId === recipient)
-				.forEach((c) =>
-					c.send(
-						JSON.stringify({
-							text: text,
-							file: file ? filename : null,
-							sender: connection.userId,
-							recipient: recipient,
-							_id: messageDoc._id,
-							sentAt: sentAt,
-						})
-					)
-				);
+			//send message to the recipient
+			for (const [userId, socketId] of userIdToSocketIdMap) {
+				if (userId === recipient) {
+					io.to(socketId).emit("incoming:message", {
+						text: text,
+						file: file ? filename : null,
+						sender: socket.userId,
+						recipient: recipient,
+						_id: messageDoc._id,
+						sentAt: sentAt,
+					});
+				}
+			}
 		}
+	});
 
+	socket.on("seen:message", async ({ ptachala, seenAt }) => {
 		if (ptachala && seenAt) {
 			// seenAt -> is(dekha) user ka seen time
 			const messageSeenDetails = await MessageSeen.findOne({
-				dekha: connection.userId,
+				dekha: socket.userId,
 				ptachala: ptachala,
 			});
 
 			if (messageSeenDetails) {
 				await MessageSeen.findOneAndUpdate(
-					{ dekha: connection.userId, ptachala: ptachala },
+					{ dekha: socket.userId, ptachala: ptachala },
 					{ seenAt: seenAt }
 				);
 			} else {
 				await MessageSeen.create({
-					dekha: connection.userId,
+					dekha: socket.userId,
 					ptachala: ptachala,
 					seenAt: seenAt,
 				});
 			}
 			// console.log("ptachala");
 
-			[...wss.clients]
-				.filter((c) => c.userId === ptachala)
-				.forEach((c) =>
-					c.send(
-						JSON.stringify({
-							dekha: connection.userId,
-							ptachala: ptachala,
-							seenAt: seenAt,
-						})
-					)
-				);
+			for (const [userId, socketId] of userIdToSocketIdMap) {
+				if (userId === ptachala) {
+					io.to(socketId).emit("seenAt:message", {
+						dekha: socket.userId,
+						ptachala: ptachala,
+						seenAt: seenAt,
+					});
+				}
+			}
 		}
 	});
-
-	//notify online people to every client(socket)
-	notifyAboutOnlinePeople();
 });
+
+//web socket server
+// const wss = new ws.WebSocketServer({ server });
+
+// wss.on("connection", (connection, req) => {
+// 	console.log("Socket connected");
+
+// 	connection.isAlive = true;
+
+// 	connection.timer = setInterval(() => {
+// 		connection.ping();
+// 		connection.expireTimer = setTimeout(() => {
+// 			connection.isAlive = false;
+// 			connection.terminate();
+// 			notifyAboutOnlinePeople();
+// 			// console.log("expire");
+// 			clearInterval(connection.timer);
+// 		}, 1000);
+// 	}, 5000);
+
+// 	connection.on("pong", () => {
+// 		clearTimeout(connection.expireTimer);
+// 	});
+
+// });
