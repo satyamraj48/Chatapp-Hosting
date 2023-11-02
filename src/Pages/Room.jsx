@@ -206,7 +206,7 @@ function Room() {
 								height={"100%"}
 								url={remoteStream}
 								playing
-								// muted
+								muted
 							/>
 						</>
 					)}
