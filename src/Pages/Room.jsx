@@ -197,7 +197,7 @@ function Room() {
 					)}
 				</div>
 				<div className="drop-shadow-md">
-					{remoteStream && (
+					{callAccept && remoteStream && (
 						<>
 							{/* <p>Remote Stream</p> */}
 							<ReactPlayer
@@ -206,7 +206,7 @@ function Room() {
 								height={"100%"}
 								url={remoteStream}
 								playing
-								muted
+								// muted
 							/>
 						</>
 					)}
