@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from "react";
 import { CallContext, UserContext } from "./UserContext";
 import ReactPlayer from "react-player";
 import { useNavigate } from "react-router-dom";
+import { MdCallEnd } from "react-icons/md";
+import { BiSolidPhoneCall } from "react-icons/bi";
 
 function Room() {
 	const { socket, peer, getOffer, getAnswer, setRemoteAnswer } =
@@ -17,6 +19,7 @@ function Room() {
 
 	const [myStream, setMyStream] = useState(null);
 	const [remoteStream, setRemoteStream] = useState(null);
+	const [callAccept, setCallAccept] = useState(null);
 
 	async function handleIncomingCall({ from, offer }) {
 		console.log("Incoming Call from ->", from, " and offer is -> ", offer);
@@ -132,6 +135,7 @@ function Room() {
 		for (const track of myStream.getTracks()) {
 			peer.addTrack(track, myStream);
 		}
+		setCallAccept(true);
 	};
 
 	const handleTrackEvent = async (ev) => {
@@ -161,25 +165,24 @@ function Room() {
 
 	return (
 		<div className="bg-doodle-pattern bg-contain w-screen h-screen flex flex-col items-center">
-			<h4 className="mt-1 text-xs">
+			<h4 className="mt-1 text-xs opacity-5">
 				{remoteSocketId ? "Connected" : "Not Connected"}
 			</h4>
 			{!remoteStream && (
-				<div className="w-[50%] h-[100px] flex items-center justify-center">
-					<div className="w-[60%] h-[50%] backdrop-blur-md rounded-lg border-2 text-gray-700 flex flex-col items-center justify-center gap-2">
-						{videoCall && !remoteStream && (
-							<div className=" text-sm animate-ping">Calling...</div>
-						)}
-					</div>
+				<div className="w-[30%] max-w-[100px] h-[50px] bg-blue-900 shadow-md rounded-lg border text-white flex items-center justify-center">
+					{videoCall && !remoteStream && (
+						<div className=" text-md animate-pulse">Calling...</div>
+					)}
 				</div>
 			)}
 
 			<div className="mt-1 mb-2 h-full bg-pink-30 flex flex-col md:flex-row flex-wrap items-center justify-center gap-1">
-				<div className="">
+				<div className="drop-shadow-md relative">
 					{myStream && (
 						<>
 							{/* <p>My Stream</p> */}
 							<ReactPlayer
+								// className="react-player"
 								width={"100%"}
 								height={"100%"}
 								url={myStream}
@@ -189,11 +192,12 @@ function Room() {
 						</>
 					)}
 				</div>
-				<div className="">
+				<div className="drop-shadow-md relative">
 					{remoteStream && (
 						<>
 							{/* <p>Remote Stream</p> */}
 							<ReactPlayer
+								// className="react-player"
 								width={"100%"}
 								height={"100%"}
 								url={remoteStream}
@@ -202,30 +206,30 @@ function Room() {
 						</>
 					)}
 				</div>
-				<div className="flex md:flex-col gap-5">
-					{(!remoteStream && !videoCall) && (
-						<p className="text-xl text-center">
+				<div className="bg-pink-30 w-[100%] flex flex-col items-center justify-center">
+					{remoteStream && !videoCall && !callAccept && (
+						<p className="bg-blue-800/70 shadow-md px-5 py-2 rounded-md text-md text-white font-semibold text-center">
 							Incoming call
 							<span className="animate-pulse tracking-widest">...</span>
 						</p>
 					)}
-					<div className="flex items-center gap-8">
-						{(!remoteStream && !videoCall) && (
+					<div className="mt-8 flex items-center justify-around">
+						{remoteStream && !videoCall && !callAccept && (
 							<button
-								className="bg-green-500 text-white rounded-md px-3 py-1 animate-pulse"
+								className="bg-green-500 shadow-md text-white rounded-full p-2 animate-pulse"
 								onClick={sendStreams}
 							>
-								Accept
+								<BiSolidPhoneCall className="text-3xl" />
 							</button>
 						)}
 						{(remoteStream || videoCall) && (
 							<button
 								className={`${
 									videoCall ? "mt-10" : "ml-10"
-								} bg-red-500 text-white rounded-lg px-3 py-1`}
+								} bg-red-500 shadow-md text-white rounded-full p-2`}
 								onClick={cancelVideoCall}
 							>
-								Cancel
+								<MdCallEnd className="text-2xl" />
 							</button>
 						)}
 					</div>
