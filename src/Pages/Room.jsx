@@ -223,7 +223,7 @@ function Room() {
 								height={"100%"}
 								url={remoteStream}
 								playing
-								muted
+								// muted
 							/>
 						</>
 					)}
@@ -256,7 +256,7 @@ function Room() {
 				</div>
 
 				{/* cancel button after call recieved */}
-				{((videoCall || callAccept)) && (
+				{(videoCall || callAccept) && (
 					<div className="absolute bottom-5 right-[] z-[200] bg-yellow-40">
 						<button
 							className={`bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
