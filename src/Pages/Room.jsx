@@ -167,9 +167,14 @@ function Room() {
 		window.location.reload();
 	};
 
+	const [viewVideoFull, setViewVideoFull] = useState(true);
+	const handleViewVideo = () => {
+		setViewVideoFull(!viewVideoFull);
+	};
+
 	return (
-		<div className="bg-doodle-pattern bg-contain w-screen h-screen flex flex-col items-center">
-			<h4 className="mt-1 text-xs opacity-5">
+		<div className="relative bg-doodle-pattern bg-contain w-screen h-screen flex flex-col items-center">
+			<h4 className="mt-1 text-xs">
 				{remoteSocketId ? "Connected" : "Not Connected"}
 			</h4>
 			{!remoteStream && (
@@ -180,13 +185,19 @@ function Room() {
 				</div>
 			)}
 
-			<div className="mt-1 mb-2 h-full bg-pink-30 flex flex-col md:flex-row items-center justify-center gap-1">
-				<div className="drop-shadow-md">
+			<div className="my-4 w-full h-full bg-pink-30 backdrop-blur-sm flex flex-col md:flex-row items-center justify-center gap-1">
+				<div
+					className={`absolute ${
+						viewVideoFull
+							? "w-full h-full"
+							: "bottom-0 right-0 z-[100] w-[30%] h-fit border-2 drop-shadow-md cursor-pointer"
+					} borde transition-all duration-200`}
+					onClick={!viewVideoFull && handleViewVideo}
+				>
 					{myStream && (
 						<>
 							{/* <p>My Stream</p> */}
 							<ReactPlayer
-								// className="react-player"
 								width={"100%"}
 								height={"100%"}
 								url={myStream}
@@ -196,42 +207,46 @@ function Room() {
 						</>
 					)}
 				</div>
-				<div className="drop-shadow-md">
+				<div
+					className={`absolute ${
+						!viewVideoFull
+							? "w-full h-full"
+							: "bottom-0 right-0 z-[100] w-[30%] h-fit border-2 drop-shadow-md cursor-pointer"
+					} transition-all duration-200`}
+					onClick={viewVideoFull && handleViewVideo}
+				>
 					{callAccept && remoteStream && (
 						<>
 							{/* <p>Remote Stream</p> */}
 							<ReactPlayer
-								// className="react-player"
 								width={"100%"}
 								height={"100%"}
 								url={remoteStream}
 								playing
-								// muted
+								muted
 							/>
 						</>
 					)}
 				</div>
-				<div className="bg-pink-30 w-[100%] flex flex-col items-center justify-center">
+				<div className="relative z-[300] bg-pink-30 w-full backdrop-blur-sm flex flex-col items-center justify-center">
 					{remoteStream && (!audioCall || !videoCall) && !callAccept && (
 						<p className="bg-blue-800/70 shadow-md px-5 py-2 rounded-md text-md text-white font-semibold text-center">
 							Incoming call
 							<span className="animate-pulse tracking-widest">...</span>
 						</p>
 					)}
-					<div className="mt-8 flex items-center justify-around">
+					<div className="flex items-center justify-around gap-8">
 						{remoteStream && (!audioCall || !videoCall) && !callAccept && (
 							<button
-								className="bg-green-500 shadow-md text-white rounded-full p-2 animate-pulse"
+								className="mt-10 bg-green-500 shadow-md text-white rounded-full p-2 md:p-5 animate-pulse"
 								onClick={sendStreams}
 							>
 								<BiSolidPhoneCall className="text-3xl" />
 							</button>
 						)}
-						{(remoteStream || audioCall || videoCall) && (
+						{remoteStream && (!audioCall || !videoCall) && !callAccept && (
 							<button
-								className={`${
-									audioCall || videoCall ? "mt-10" : "ml-10"
-								} bg-red-500 shadow-md text-white rounded-full p-2`}
+								className={`mt-10 bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
 								onClick={cancelVideoCall}
 							>
 								<MdCallEnd className="text-2xl" />
@@ -239,6 +254,18 @@ function Room() {
 						)}
 					</div>
 				</div>
+
+				{/* cancel button after call recieved */}
+				{((videoCall || callAccept)) && (
+					<div className="absolute bottom-5 right-[] z-[200] bg-yellow-40">
+						<button
+							className={`bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
+							onClick={cancelVideoCall}
+						>
+							<MdCallEnd className="text-2xl" />
+						</button>
+					</div>
+				)}
 			</div>
 		</div>
 	);

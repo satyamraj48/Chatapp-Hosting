@@ -95,10 +95,3 @@ input::-webkit-inner-spin-button {
 	background-color: rgb(44, 85, 219);
 	filter: drop-shadow(5px 5px 10px #00000065);
 }
-
-
-.react-player {
-	position: absolute;
-	top: 0;
-	left: 0;
-  }

@@ -46,6 +46,8 @@ const httpServer = createServer(app);
 const { Server } = require("socket.io");
 
 const io = new Server(httpServer, {
+	// pingInterval: 5000,
+	// pingTimeout: 10000,
 	cors: true,
 });
 
@@ -60,28 +62,27 @@ const userIdToUsernameMap = new Map();
 
 io.on("connection", (socket) => {
 	console.log("socket io", socket.id);
-	socket.isAlive = true;
 
-	// socket.timer = setInterval(() => {
-	// 	socket.ping();
-	// 	socket.expireTimer = setTimeout(() => {
-	// 		socket.isAlive = false;
-	// 		socket.terminate();
-	// 		notifyAboutOnlinePeople();
-	// 		// console.log("expire");
-	// 		clearInterval(socket.timer);
-	// 	}, 1000);
-	// }, 5000);
+	socket.on("ping", () => {
+		console.log("ping");
+	});
 
-	// socket.on("pong", () => {
-	// 	clearTimeout(socket.expireTimer);
-	// });
+	socket.timer = setInterval(() => {
+		// console.log("interval");
+		// socket.expireTimer = setTimeout(() => {
+		// console.log("timeout");
+		if (socket) {
+			notifyAboutOnlinePeople();
+			// clearInterval(socket.timer);
+		}
+		// }, 1000);
+	}, 6000);
 
 	let cookies = null;
 	io.engine.on("headers", (headers, req) => {
 		if (!cookies) {
-			// console.log("cookie-> ", req.headers.cookie);
 			cookies = req.headers.cookie;
+			// console.log("cookie-> ", req.headers.cookie);
 			//read userId and username from their cookie for this connection
 			if (cookies) {
 				const tokenCookieString = cookies
@@ -124,7 +125,6 @@ io.on("connection", (socket) => {
 			io.to(socketId).emit("online:users", { onlinePeople });
 		}
 	}
-	// notifyAboutOnlinePeople();
 
 	socket.on("room:join", ({ roomId, emailId, recipient }) => {
 		console.log("2 6 User -> ", emailId, "Joined Room -> ", roomId);
@@ -249,28 +249,3 @@ io.on("connection", (socket) => {
 		}
 	});
 });
-
-//web socket server
-// const wss = new ws.WebSocketServer({ server });
-
-// wss.on("connection", (connection, req) => {
-// 	console.log("Socket connected");
-
-// 	connection.isAlive = true;
-
-// 	connection.timer = setInterval(() => {
-// 		connection.ping();
-// 		connection.expireTimer = setTimeout(() => {
-// 			connection.isAlive = false;
-// 			connection.terminate();
-// 			notifyAboutOnlinePeople();
-// 			// console.log("expire");
-// 			clearInterval(connection.timer);
-// 		}, 1000);
-// 	}, 5000);
-
-// 	connection.on("pong", () => {
-// 		clearTimeout(connection.expireTimer);
-// 	});
-
-// });
