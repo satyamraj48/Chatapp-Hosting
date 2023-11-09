@@ -19,19 +19,37 @@ function Room() {
 
 	const [myStream, setMyStream] = useState(null);
 	const [remoteStream, setRemoteStream] = useState(null);
+	const [incomingCallInfo, setIncomingCallInfo] = useState({});
 	const [callAccept, setCallAccept] = useState(null);
 
-	async function handleIncomingCall({ from, offer }) {
+	async function handleIncomingCall({ from, offer, isVideoCall }) {
 		console.log("Incoming Call from ->", from, " and offer is -> ", offer);
-		const stream = await navigator.mediaDevices.getUserMedia({
-			audio: true,
-			video: true,
-		});
-		setMyStream(stream);
-		setRemoteSocketId(from);
-		const ans = await getAnswer(offer);
-		socket.emit("call:accepted", { to: from, ans });
+
+		// incoming calls button
+		if (callAccept) {
+			const ans = await getAnswer(offer);
+			socket.emit("call:accepted", { to: from, ans });
+			console.log("call accept true");
+		} else {
+			const localStream = await navigator.mediaDevices.getUserMedia({
+				audio: true,
+				video: isVideoCall,
+			});
+			setMyStream(localStream);
+			setRemoteSocketId(from);
+			console.log("incoming call info");
+			setIncomingCallInfo({ from, offer });
+		}
 	}
+
+	useEffect(() => {
+		if (callAccept) {
+			handleIncomingCall({
+				from: incomingCallInfo.from,
+				offer: incomingCallInfo.offer,
+			});
+		}
+	}, [callAccept]);
 
 	async function handleCallAccepted({ from, ans }) {
 		console.log("Call Accepted -> ", from, "and answer->", ans);
@@ -42,8 +60,8 @@ function Room() {
 	async function handleNegotiationIncoming({ from, offer }) {
 		const ans = await getAnswer(offer);
 		socket.emit("peer:nego:done", { to: from, ans });
+		sendStreams();
 	}
-
 	async function handleNegotiationFinal({ from, ans }) {
 		console.log("Negotiation Final");
 		await setRemoteAnswer(ans);
@@ -54,30 +72,26 @@ function Room() {
 		setAudioCall(false);
 		setVideoCall(false);
 		navigate("/");
-		window.location.reload();
 	}
-	function handleNewUserJoined({ emailId, id }) {
-		console.log("Room mei-> new user joined room", emailId, "s-id-> ", id);
-		setRemoteSocketId(id);
-	}
+
 	//audio call button click
 	const handleAudioCallUser = async () => {
 		const stream = await navigator.mediaDevices.getUserMedia({
 			audio: true,
 		});
 		const offer = await getOffer();
-		socket.emit("user:call", { to: remoteSocketId, offer });
+		socket.emit("user:call", { to: remoteSocketId, offer, isVideoCall: false });
 		setMyStream(stream);
 	};
 	//video call button click
 	const handleVideoCallUser = async () => {
-		const stream = await navigator.mediaDevices.getUserMedia({
+		const localStream = await navigator.mediaDevices.getUserMedia({
 			audio: true,
 			video: true,
 		});
 		const offer = await getOffer();
-		socket.emit("user:call", { to: remoteSocketId, offer });
-		setMyStream(stream);
+		socket.emit("user:call", { to: remoteSocketId, offer, isVideoCall: true });
+		setMyStream(localStream);
 	};
 	function handleRemotePersonJoined({ joined }) {
 		if (joined && remoteSocketId) {
@@ -88,6 +102,15 @@ function Room() {
 				handleAudioCallUser();
 			}
 		}
+	}
+	function handleNewUserJoined({ emailId, joinerId }) {
+		console.log(
+			"Room mei-> new user joined room",
+			emailId,
+			"s-id-> ",
+			joinerId
+		);
+		setRemoteSocketId(joinerId);
 	}
 
 	useEffect(() => {
@@ -139,13 +162,12 @@ function Room() {
 		for (const track of myStream.getTracks()) {
 			peer.addTrack(track, myStream);
 		}
-		setCallAccept(true);
 	};
 
 	const handleTrackEvent = async (ev) => {
-		const remoteStream = ev.streams;
+		const incomingStream = ev.streams;
 		console.log("GOT TRACKS!!");
-		setRemoteStream(remoteStream[0]);
+		setRemoteStream(incomingStream[0]);
 	};
 
 	useEffect(() => {
@@ -160,41 +182,44 @@ function Room() {
 	const cancelVideoCall = () => {
 		setMyStream(null);
 		setRemoteStream(null);
+		setCallAccept(null);
 		setAudioCall(false);
 		setVideoCall(false);
 		navigate("/");
 		socket.emit("cancel:videoCall", { to: remoteSocketId });
-		window.location.reload();
 	};
 
 	const [viewVideoFull, setViewVideoFull] = useState(true);
-	const handleViewVideo = () => {
-		setViewVideoFull(!viewVideoFull);
-	};
 
 	return (
 		<div className="relative bg-doodle-pattern bg-contain w-screen h-screen flex flex-col items-center">
 			<h4 className="mt-1 text-xs">
 				{remoteSocketId ? "Connected" : "Not Connected"}
 			</h4>
-			{!remoteStream && (
-				<div className="w-[30%] max-w-[100px] h-[50px] bg-blue-900 shadow-md rounded-lg border text-white flex items-center justify-center">
-					{(audioCall || videoCall) && !remoteStream && (
-						<div className=" text-md animate-pulse">Calling...</div>
-					)}
+			{(audioCall || videoCall) && !remoteStream && (
+				<div className="mt-2 px-4 py-2 bg-blue-900 shadow-md rounded-lg border text-white">
+					<div className=" text-md animate-pulse">Calling...</div>
 				</div>
 			)}
 
-			<div className="my-4 w-full h-full bg-pink-30 backdrop-blur-sm flex flex-col md:flex-row items-center justify-center gap-1">
-				<div
-					className={`absolute ${
-						viewVideoFull
-							? "w-full h-full"
-							: "bottom-0 right-0 z-[100] w-[30%] h-fit border-2 drop-shadow-md cursor-pointer"
-					} borde transition-all duration-200`}
-					onClick={!viewVideoFull && handleViewVideo}
-				>
-					{myStream && (
+			<div
+				className={`mt-5 w-full h-[80%] bg-pink-30 flex ${
+					viewVideoFull ? "lg:flex-row flex-col" : "lg:flex-row-reverse flex-col-reverse"
+				} items-center justify-center gap-1`}
+			>
+				{myStream && (
+					<div
+						className={`absolute md:static md:w-[45%] ${
+							viewVideoFull
+								? "w-full h-full"
+								: "bottom-2 right-2 z-[100] w-[30%] drop-shadow-md cursor-pointer"
+						}`}
+						onClick={() => {
+							if (!viewVideoFull) {
+								setViewVideoFull(!viewVideoFull);
+							}
+						}}
+					>
 						<>
 							{/* <p>My Stream</p> */}
 							<ReactPlayer
@@ -205,17 +230,21 @@ function Room() {
 								muted
 							/>
 						</>
-					)}
-				</div>
-				<div
-					className={`absolute ${
-						!viewVideoFull
-							? "w-full h-full"
-							: "bottom-0 right-0 z-[100] w-[30%] h-fit border-2 drop-shadow-md cursor-pointer"
-					} transition-all duration-200`}
-					onClick={viewVideoFull && handleViewVideo}
-				>
-					{callAccept && remoteStream && (
+					</div>
+				)}
+				{remoteStream && (
+					<div
+						className={`absolute md:static md:w-[45%] ${
+							!viewVideoFull
+								? "w-full h-full"
+								: "bottom-2 right-2 z-[100] w-[30%] drop-shadow-md cursor-pointer"
+						}`}
+						onClick={() => {
+							if (viewVideoFull) {
+								setViewVideoFull(!viewVideoFull);
+							}
+						}}
+					>
 						<>
 							{/* <p>Remote Stream</p> */}
 							<ReactPlayer
@@ -226,27 +255,28 @@ function Room() {
 								// muted
 							/>
 						</>
-					)}
-				</div>
-				<div className="relative z-[300] bg-pink-30 w-full backdrop-blur-sm flex flex-col items-center justify-center">
-					{remoteStream && (!audioCall || !videoCall) && !callAccept && (
+					</div>
+				)}
+
+				<div className="absolute z-[300] bg-yellow-20 w-fit flex flex-col items-center justify-center">
+					{!videoCall && !callAccept && (
 						<p className="bg-blue-800/70 shadow-md px-5 py-2 rounded-md text-md text-white font-semibold text-center">
 							Incoming call
 							<span className="animate-pulse tracking-widest">...</span>
 						</p>
 					)}
 					<div className="flex items-center justify-around gap-8">
-						{remoteStream && (!audioCall || !videoCall) && !callAccept && (
+						{!videoCall && !callAccept && (
 							<button
-								className="mt-10 bg-green-500 shadow-md text-white rounded-full p-2 md:p-5 animate-pulse"
-								onClick={sendStreams}
+								className="mt-5 bg-green-500/80 shadow-md text-white rounded-full p-2 md:p-5 animate-bounce"
+								onClick={() => setCallAccept(true)}
 							>
 								<BiSolidPhoneCall className="text-3xl" />
 							</button>
 						)}
-						{remoteStream && (!audioCall || !videoCall) && !callAccept && (
+						{!videoCall && !callAccept && (
 							<button
-								className={`mt-10 bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
+								className={`my-10 bg-red-500/80 shadow-md text-white rounded-full p-2 md:p-5`}
 								onClick={cancelVideoCall}
 							>
 								<MdCallEnd className="text-2xl" />
@@ -254,19 +284,18 @@ function Room() {
 						)}
 					</div>
 				</div>
-
-				{/* cancel button after call recieved */}
-				{(videoCall || callAccept) && (
-					<div className="absolute bottom-5 right-[] z-[200] bg-yellow-40">
-						<button
-							className={`bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
-							onClick={cancelVideoCall}
-						>
-							<MdCallEnd className="text-2xl" />
-						</button>
-					</div>
-				)}
 			</div>
+			{/* cancel button after call recieved */}
+			{(audioCall || videoCall || callAccept) && (
+				<div className="absolute md:static bottom-5 z-[200] md:my-4 bg-yellow-40 md:h-[70px]">
+					<button
+						className={`bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
+						onClick={cancelVideoCall}
+					>
+						<MdCallEnd className="text-2xl" />
+					</button>
+				</div>
+			)}
 		</div>
 	);
 }

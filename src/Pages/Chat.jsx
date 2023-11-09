@@ -6,12 +6,11 @@ import { CallContext, UserContext } from "./UserContext";
 import { BsArrowDownShort, BsArrowLeft } from "react-icons/bs";
 import { uniqBy } from "lodash";
 import axios from "axios";
-import toast from "react-hot-toast";
 import Contact from "./Contact";
 import { HiUser } from "react-icons/hi2";
 import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
-import { IoIosCall, IoMdArrowBack, IoMdCall } from "react-icons/io";
+import { IoMdArrowBack, IoMdCall } from "react-icons/io";
 import { LuTriangleRight } from "react-icons/lu";
 import { BiSolidVideo } from "react-icons/bi";
 import LogoAnimate from "./LogoAnimate";
@@ -35,9 +34,9 @@ function Chat() {
 		useContext(CallContext);
 	const navigate = useNavigate();
 
-	function handleOnlineUsers(data) {
-		// console.log("->>>> ", data);
-		showOnlinePeople(data.onlinePeople);
+	function handleOnlineUsers({ onlinePeople }) {
+		// console.log("->>>> ", onlinePeople);
+		showOnlinePeople(onlinePeople);
 	}
 	function handleIncomingMessage(messageData) {
 		// console.log("->>>> ", messageData);
@@ -68,14 +67,14 @@ function Chat() {
 	}
 	function handleIncomingVideoCall({ sender, roomId }) {
 		const emailId = id + "@video.com";
-		if (roomId && emailId) {
+		if (roomId && emailId && sender) {
 			console.log("5 video call aya and called room join");
 			socket.emit("room:join", { roomId, emailId });
 		}
 	}
-	function handleNewUserJoined({ emailId, id }) {
-		console.log("Chat mei-> new user joined room", emailId, "s-id-> ", id);
-		setRemoteSocketId(id);
+	function handleNewUserJoined({ emailId, joinerId }) {
+		console.log("Chat mei-> new user joined room", emailId, "s-id-> ", joinerId);
+		setRemoteSocketId(joinerId);
 	}
 
 	useEffect(() => {
@@ -138,22 +137,6 @@ function Chat() {
 		}
 	}
 
-	// function connectToWs() {
-	// 	const toastId = toast.loading("Connecting...");
-	// 	const ws = new WebSocket(
-	// 		`${0 ? "wss" : "ws"}://${import.meta.env.VITE_REACT_APP_WS_URL}`
-	// 	);
-	// 	setWs(ws);
-	// 	ws.addEventListener("close", () => {
-	// 		setTimeout(() => {
-	// 			console.log("Disconnected. Trying to reconnect...");
-	// 			connectToWs();
-	// 		}, 1000);
-	// 	});
-	// 	console.log("Now Connected!");
-	// 	toast.dismiss(toastId);
-	// }
-
 	function sendMessage(e, file = null) {
 		if (e) e.preventDefault();
 		// setLoadingMsg(true);
@@ -189,7 +172,9 @@ function Chat() {
 		// console.log(peopleArray);
 		const people = {};
 		peopleArray.forEach(({ userId, username }) => {
-			if (userId !== id) people[userId] = username;
+			if (userId !== id) {
+				people[userId] = username;
+			}
 		});
 		// console.log("online people-> ", people);
 		setOnlinePeople(people);

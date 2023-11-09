@@ -5,7 +5,6 @@ import { UserContext } from "./Pages/UserContext";
 import { useContext, useEffect } from "react";
 import Chat from "./Pages/Chat";
 import { Routes, Route } from "react-router-dom";
-import Home from "./Pages/Home";
 import Room from "./Pages/Room";
 
 function App() {
@@ -35,17 +34,16 @@ function App() {
 		return (
 			<Routes>
 				<Route path="/" element={<Chat />} />
-				<Route path="/video" element={<Home />} />
 				<Route path="/room/:roomId" element={<Room />} />
 			</Routes>
 		);
+	} else {
+		return (
+			<Routes>
+				<Route path="/" element={<RegisterAndLoginForm />} />
+			</Routes>
+		);
 	}
-
-	return (
-		<Routes>
-			<Route path="/" element={<RegisterAndLoginForm />} />
-		</Routes>
-	);
 }
 
 export default App;

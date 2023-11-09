@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "./UserContext";
 import toast from "react-hot-toast";
 
@@ -8,7 +8,11 @@ function RegisterAndLoginForm() {
 	const [password, setPassword] = useState("");
 	const [isLoginOrRegister, setIsLoginOrRegister] = useState("login");
 
-	const { setUsername: setLoggedInUsername, setId } = useContext(UserContext);
+	const {
+		setUsername: setLoggedInUsername,
+		setId,
+		socket,
+	} = useContext(UserContext);
 
 	async function handleSubmit(e) {
 		e.preventDefault();
@@ -27,16 +31,32 @@ function RegisterAndLoginForm() {
 				username,
 				password,
 			});
+			// console.log("login response-> ", loginResponse);
 			if (loginResponse.data.success) {
-				toast.success("Logged in Successfully");
+				//verifying the login details
+				socket.emit("login:request", { token: loginResponse.data.token });
 			} else {
 				toast.error("Login Failed");
 			}
-			// console.log("LR-> ", loginResponse);
-			setLoggedInUsername(username);
-			setId(loginResponse.data.user._id);
 		}
 	}
+
+	function handleLoginSuccess({ userId, username }) {
+		if (userId && username) {
+			toast.success("Logged in Successfully");
+			setLoggedInUsername(username);
+			setId(userId);
+		}
+	}
+
+	useEffect(() => {
+		//on verified
+		socket.on("login:success", handleLoginSuccess);
+		return () => {
+			socket.off("login:success", handleLoginSuccess);
+		};
+	}, [socket, handleLoginSuccess]);
+
 	return (
 		<div className="bg-blue-50 h-screen flex items-center font-Poppins">
 			<form onSubmit={handleSubmit} className="mx-auto w-72 mb-12">

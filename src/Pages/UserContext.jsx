@@ -5,7 +5,7 @@ export const UserContext = createContext({});
 export const CallContext = createContext({});
 
 function UserContextProvider({ children }) {
-	const [username, setUsername] = useState(null);
+	const [username, setUsername] = useState("");
 	const [id, setId] = useState(null);
 
 	const socket = useMemo(
@@ -51,27 +51,6 @@ function UserContextProvider({ children }) {
 		}
 	};
 
-	const sendStream = async (stream) => {
-		const tracks = stream.getTracks();
-		for (const track of tracks) {
-			peer.addTrack(track, stream);
-		}
-	};
-
-	const [remoteStream, setRemoteStream] = useState(null);
-
-	function handleTrackEvent(ev) {
-		const streams = ev.streams;
-		setRemoteStream(streams[0]);
-	}
-
-	useEffect(() => {
-		peer.addEventListener("track", handleTrackEvent);
-		return () => {
-			peer.removeEventListener("track", handleTrackEvent);
-		};
-	}, [handleTrackEvent, peer]);
-
 	const providedUserValue = {
 		username,
 		setUsername,
@@ -82,8 +61,6 @@ function UserContextProvider({ children }) {
 		getOffer,
 		getAnswer,
 		setRemoteAnswer,
-		sendStream,
-		remoteStream,
 	};
 
 	const [audioCall, setAudioCall] = useState(false);

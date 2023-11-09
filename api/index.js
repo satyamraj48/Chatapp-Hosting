@@ -46,8 +46,6 @@ const httpServer = createServer(app);
 const { Server } = require("socket.io");
 
 const io = new Server(httpServer, {
-	// pingInterval: 5000,
-	// pingTimeout: 10000,
 	cors: true,
 });
 
@@ -63,55 +61,6 @@ const userIdToUsernameMap = new Map();
 io.on("connection", (socket) => {
 	console.log("socket io", socket.id);
 
-	socket.on("ping", () => {
-		console.log("ping");
-	});
-
-	socket.timer = setInterval(() => {
-		// console.log("interval");
-		// socket.expireTimer = setTimeout(() => {
-		// console.log("timeout");
-		if (socket) {
-			notifyAboutOnlinePeople();
-			// clearInterval(socket.timer);
-		}
-		// }, 1000);
-	}, 6000);
-
-	let cookies = null;
-	io.engine.on("headers", (headers, req) => {
-		if (!cookies) {
-			cookies = req.headers.cookie;
-			// console.log("cookie-> ", req.headers.cookie);
-			//read userId and username from their cookie for this connection
-			if (cookies) {
-				const tokenCookieString = cookies
-					.split(";")
-					.find((str) => str.startsWith("token="));
-				if (tokenCookieString) {
-					const token = tokenCookieString.split("=")[1];
-					if (token) {
-						try {
-							// console.log("token-> ", token);
-							const decode = jwt.verify(token, process.env.JWT_SECRET);
-							// console.log("decode-> ", decode);
-							const { id: userId, username } = decode;
-							socket.userId = userId;
-							socket.username = username;
-							//map user Id to Socket Id
-							userIdToSocketIdMap.set(userId, socket.id);
-							userIdToUsernameMap.set(userId, socket.username);
-							//notify all about online people
-							notifyAboutOnlinePeople();
-						} catch (error) {
-							console.log(error);
-						}
-					}
-				}
-			}
-		}
-	});
-
 	function notifyAboutOnlinePeople() {
 		//notify everyone about online people (when someone connects)
 		let onlinePeople = [];
@@ -126,11 +75,65 @@ io.on("connection", (socket) => {
 		}
 	}
 
+	io.engine.on("headers", (headers, req) => {
+		// console.log("cookie-> ", req.headers.cookie);
+		const cookies = req.headers.cookie;
+
+		//read userId and username from their cookie for this connection
+		if (cookies) {
+			const tokenCookieString = cookies
+				.split(";")
+				.find((str) => str.startsWith("token="));
+			if (tokenCookieString) {
+				const token = tokenCookieString.split("=")[1];
+				if (token) {
+					try {
+						// console.log("token-> ", token);
+						const decode = jwt.verify(token, process.env.JWT_SECRET);
+						// console.log("decode-> ", decode);
+						const { id: userId, username } = decode;
+						socket.userId = userId;
+						socket.username = username;
+						//map user Id to Socket Id
+						userIdToSocketIdMap.set(userId, socket.id);
+						userIdToUsernameMap.set(userId, socket.username);
+						//notify all about online people
+						notifyAboutOnlinePeople();
+					} catch (error) {
+						console.log(error);
+					}
+				}
+			}
+		}
+	});
+
+	socket.on("login:request", ({ token }) => {
+		if (token) {
+			try {
+				// console.log("token-> ", token);
+				const decode = jwt.verify(token, process.env.JWT_SECRET);
+				// console.log("decode-> ", decode);
+				const { id: userId, username } = decode;
+				socket.emit("login:success", { userId, username });
+
+				socket.userId = userId;
+				socket.username = username;
+				//map user Id to Socket Id
+				userIdToSocketIdMap.set(userId, socket.id);
+				userIdToUsernameMap.set(userId, socket.username);
+				//notify all about online people
+				notifyAboutOnlinePeople();
+			} catch (error) {
+				console.log(error);
+			}
+		}
+	});
+
 	socket.on("room:join", ({ roomId, emailId, recipient }) => {
 		console.log("2 6 User -> ", emailId, "Joined Room -> ", roomId);
 		emailToSocketIdMap.set(emailId, socket.id);
 		socketIdToEmailMap.set(socket.id, emailId);
-		io.to(roomId).emit("user:joined", { emailId, id: socket.id });
+		io.to(roomId).emit("user:joined", { emailId, joinerId: socket.id });
 		socket.join(roomId);
 		io.to(socket.id).emit("room:join", {
 			roomId,
@@ -146,7 +149,7 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on("outgoing:videoCall", ({ sender, to, roomId }) => {
-		if (to) {
+		if (to && roomId) {
 			console.log("4 video call aaya idhar");
 			const socketId = userIdToSocketIdMap.get(to);
 			io.to(socketId).emit("incoming:videoCall", { sender, roomId });
@@ -157,9 +160,8 @@ io.on("connection", (socket) => {
 		io.to(to).emit("cancel:videoCall", { from: socket.id });
 	});
 
-	socket.on("user:call", ({ to, offer }) => {
-		console.log("to-> ", to);
-		io.to(to).emit("incoming:call", { from: socket.id, offer });
+	socket.on("user:call", ({ to, offer, isVideoCall }) => {
+		io.to(to).emit("incoming:call", { from: socket.id, offer, isVideoCall });
 	});
 
 	socket.on("call:accepted", ({ to, ans }) => {
@@ -176,7 +178,7 @@ io.on("connection", (socket) => {
 
 	socket.on("outgoing:message", async (messageData) => {
 		const { recipient, text, file, sentAt } = messageData;
-		console.log("in IO", text);
+		// console.log("in IO", text);
 		let filename = null;
 
 		if (file) {
