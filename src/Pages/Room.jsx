@@ -3,7 +3,12 @@ import { CallContext, UserContext } from "./UserContext";
 import ReactPlayer from "react-player";
 import { useNavigate } from "react-router-dom";
 import { MdCallEnd } from "react-icons/md";
-import { BiSolidPhoneCall } from "react-icons/bi";
+import {
+	BiSolidPhoneCall,
+	BiSolidVideo,
+	BiSolidVideoOff,
+} from "react-icons/bi";
+import { AiFillAudio, AiOutlineAudioMuted } from "react-icons/ai";
 
 function Room() {
 	const { socket, peer, getOffer, getAnswer, setRemoteAnswer } =
@@ -21,6 +26,7 @@ function Room() {
 	const [remoteStream, setRemoteStream] = useState(null);
 	const [incomingCallInfo, setIncomingCallInfo] = useState({});
 	const [callAccept, setCallAccept] = useState(null);
+	const [viewVideoFull, setViewVideoFull] = useState(true);
 
 	async function handleIncomingCall({ from, offer, isVideoCall }) {
 		console.log("Incoming Call from ->", from, " and offer is -> ", offer);
@@ -66,6 +72,7 @@ function Room() {
 		console.log("Negotiation Final");
 		await setRemoteAnswer(ans);
 	}
+
 	function handleCancelVideoCall({ from }) {
 		setMyStream(null);
 		setRemoteStream(null);
@@ -162,6 +169,9 @@ function Room() {
 		for (const track of myStream.getTracks()) {
 			peer.addTrack(track, myStream);
 		}
+		// myStream.getAudioTracks()[0].enabled = false;
+		// onClick={()=>myStream.getAudioTracks()[0].enabled = false}
+		// myStream.getVideoTracks()[0].enabled = false;
 	};
 
 	const handleTrackEvent = async (ev) => {
@@ -189,7 +199,8 @@ function Room() {
 		socket.emit("cancel:videoCall", { to: remoteSocketId });
 	};
 
-	const [viewVideoFull, setViewVideoFull] = useState(true);
+	const [isAudio, setIsAudio] = useState(true);
+	const [isVideo, setIsVideo] = useState(true);
 
 	return (
 		<div className="relative bg-doodle-pattern bg-contain w-screen h-screen flex flex-col items-center">
@@ -204,7 +215,9 @@ function Room() {
 
 			<div
 				className={`mt-5 w-full h-[80%] bg-pink-30 flex ${
-					viewVideoFull ? "lg:flex-row flex-col" : "lg:flex-row-reverse flex-col-reverse"
+					viewVideoFull
+						? "lg:flex-row flex-col"
+						: "lg:flex-row-reverse flex-col-reverse"
 				} items-center justify-center gap-1`}
 			>
 				{myStream && (
@@ -287,12 +300,42 @@ function Room() {
 			</div>
 			{/* cancel button after call recieved */}
 			{(audioCall || videoCall || callAccept) && (
-				<div className="absolute md:static bottom-5 z-[200] md:my-4 bg-yellow-40 md:h-[70px]">
+				<div className="absolute md:static bottom-5 z-[200] md:my-4 bg-yellow-40 md:h-[70px] flex items-center gap-4">
 					<button
 						className={`bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
 						onClick={cancelVideoCall}
 					>
 						<MdCallEnd className="text-2xl" />
+					</button>
+					<button
+						className={`${
+							!isVideo ? "bg-blue-400" : "bg-gray-400"
+						} shadow-md text-white rounded-full p-2 md:p-5`}
+						onClick={() => {
+							setIsVideo(!isVideo);
+							myStream.getVideoTracks()[0].enabled = isVideo;
+						}}
+					>
+						{!isVideo ? (
+							<BiSolidVideo className="text-xl" />
+						) : (
+							<BiSolidVideoOff className="text-xl" />
+						)}
+					</button>
+					<button
+						className={`${
+							!isAudio ? "bg-green-400" : "bg-gray-400"
+						} shadow-md text-white rounded-full p-2 md:p-5`}
+						onClick={() => {
+							setIsAudio(!isAudio);
+							myStream.getAudioTracks()[0].enabled = isAudio;
+						}}
+					>
+						{!isAudio ? (
+							<AiFillAudio className="text-xl" />
+						) : (
+							<AiOutlineAudioMuted className="text-xl" />
+						)}
 					</button>
 				</div>
 			)}
