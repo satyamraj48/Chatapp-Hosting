@@ -9,10 +9,10 @@ import {
 	BiSolidVideoOff,
 } from "react-icons/bi";
 import { AiFillAudio, AiOutlineAudioMuted } from "react-icons/ai";
+import peer from "../components/common/peer";
 
 function Room() {
-	const { socket, peer, getOffer, getAnswer, setRemoteAnswer } =
-		useContext(UserContext);
+	const { socket } = useContext(UserContext);
 	const {
 		audioCall,
 		videoCall,
@@ -33,7 +33,7 @@ function Room() {
 
 		// incoming calls button
 		if (callAccept) {
-			const ans = await getAnswer(offer);
+			const ans = await peer.getAnswer(offer);
 			socket.emit("call:accepted", { to: from, ans });
 			console.log("call accept true");
 		} else {
@@ -59,18 +59,18 @@ function Room() {
 
 	async function handleCallAccepted({ from, ans }) {
 		console.log("Call Accepted -> ", from, "and answer->", ans);
-		await setRemoteAnswer(ans);
-		sendStreams();
+		await peer.setRemoteAnswer(ans);
+		// sendStreams();
 	}
 
 	async function handleNegotiationIncoming({ from, offer }) {
-		const ans = await getAnswer(offer);
+		const ans = await peer.getAnswer(offer);
 		socket.emit("peer:nego:done", { to: from, ans });
-		sendStreams();
 	}
 	async function handleNegotiationFinal({ from, ans }) {
 		console.log("Negotiation Final");
-		await setRemoteAnswer(ans);
+		await peer.setRemoteAnswer(ans);
+		// sendStreams();
 	}
 
 	function handleCancelVideoCall({ from }) {
@@ -96,7 +96,7 @@ function Room() {
 			audio: true,
 			video: true,
 		});
-		const offer = await getOffer();
+		const offer = await peer.getOffer();
 		socket.emit("user:call", { to: remoteSocketId, offer, isVideoCall: true });
 		setMyStream(localStream);
 	};
@@ -151,7 +151,7 @@ function Room() {
 
 	async function handleNegotiation() {
 		console.log("Negotiation needed!");
-		const offer = await getOffer();
+		const offer = await peer.getOffer();
 		socket.emit("peer:nego:needed", {
 			to: remoteSocketId,
 			offer,
@@ -159,31 +159,28 @@ function Room() {
 	}
 
 	useEffect(() => {
-		peer.addEventListener("negotiationneeded", handleNegotiation);
+		peer.peer.addEventListener("negotiationneeded", handleNegotiation);
 		return () => {
-			peer.removeEventListener("negotiationneeded", handleNegotiation);
+			peer.peer.removeEventListener("negotiationneeded", handleNegotiation);
 		};
 	}, [handleNegotiation, peer]);
 
 	const sendStreams = () => {
 		for (const track of myStream.getTracks()) {
-			peer.addTrack(track, myStream);
+			peer.peer.addTrack(track, myStream);
 		}
-		// myStream.getAudioTracks()[0].enabled = false;
-		// onClick={()=>myStream.getAudioTracks()[0].enabled = false}
-		// myStream.getVideoTracks()[0].enabled = false;
 	};
 
 	const handleTrackEvent = async (ev) => {
-		const incomingStream = ev.streams;
+		const incomingStreams = ev.streams;
 		console.log("GOT TRACKS!!");
-		setRemoteStream(incomingStream[0]);
+		setRemoteStream(incomingStreams[0]);
 	};
 
 	useEffect(() => {
-		peer.addEventListener("track", handleTrackEvent);
+		peer.peer.addEventListener("track", handleTrackEvent);
 		return () => {
-			peer.removeEventListener("track", handleTrackEvent);
+			peer.peer.removeEventListener("track", handleTrackEvent);
 		};
 	}, [handleTrackEvent, peer]);
 
@@ -310,31 +307,36 @@ function Room() {
 					<button
 						className={`${
 							!isVideo ? "bg-blue-400" : "bg-gray-400"
-						} shadow-md text-white rounded-full p-2 md:p-5`}
+						} shadow-md text-white rounded-full p-2 md:p-5 transition-all duration-200`}
 						onClick={() => {
-							setIsVideo(!isVideo);
-							myStream.getVideoTracks()[0].enabled = isVideo;
+							if (myStream) {
+								sendStreams();
+								setIsVideo(!isVideo);
+								// myStream.getVideoTracks()[0].enabled = isVideo;
+							}
 						}}
 					>
-						{!isVideo ? (
-							<BiSolidVideo className="text-xl" />
+						{myStream && !isVideo ? (
+							<BiSolidVideo className="text-2xl" />
 						) : (
-							<BiSolidVideoOff className="text-xl" />
+							<BiSolidVideoOff className="text-2xl" />
 						)}
 					</button>
 					<button
 						className={`${
 							!isAudio ? "bg-green-400" : "bg-gray-400"
-						} shadow-md text-white rounded-full p-2 md:p-5`}
+						} shadow-md text-white rounded-full p-2 md:p-5 transition-all duration-200`}
 						onClick={() => {
-							setIsAudio(!isAudio);
-							myStream.getAudioTracks()[0].enabled = isAudio;
+							if (myStream) {
+								setIsAudio(!isAudio);
+								myStream.getAudioTracks()[0].enabled = isAudio;
+							}
 						}}
 					>
-						{!isAudio ? (
-							<AiFillAudio className="text-xl" />
+						{myStream && !isAudio ? (
+							<AiFillAudio className="text-2xl" />
 						) : (
-							<AiOutlineAudioMuted className="text-xl" />
+							<AiOutlineAudioMuted className="text-2xl" />
 						)}
 					</button>
 				</div>

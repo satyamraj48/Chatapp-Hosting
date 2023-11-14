@@ -73,7 +73,12 @@ function Chat() {
 		}
 	}
 	function handleNewUserJoined({ emailId, joinerId }) {
-		console.log("Chat mei-> new user joined room", emailId, "s-id-> ", joinerId);
+		console.log(
+			"Chat mei-> new user joined room",
+			emailId,
+			"s-id-> ",
+			joinerId
+		);
 		setRemoteSocketId(joinerId);
 	}
 
@@ -221,25 +226,25 @@ function Chat() {
 	//agr ptachala user ka message is user k viewport mei h,
 	// to ptachala ko bta do is user ka seen time.
 	function sendSeenToPtachala() {
+		const box = document.querySelector(".seenBox");
+		const isInViewportBox = isInViewport(box);
+		console.log("isinViewport->  ", isInViewportBox);
+		// console.log("viewport selected->  ", selectedUserId);
 		if (selectedUserId) {
-			const box = document.querySelector(".seenBox");
-			const isInViewportBox = isInViewport(box);
-			// console.log("isinViewport->  ", isInViewportBox);
-			// console.log("viewport selected->  ", selectedUserId);
-			if (isInViewportBox || true) {
-				socket.emit("seen:message", {
-					ptachala: selectedUserId,
-					seenAt: new Date(),
-				});
-			}
+			socket.emit("seen:message", {
+				ptachala: selectedUserId,
+				seenAt: new Date(),
+			});
 		}
 	}
 
 	//scroll when message received or sent
 	useEffect(() => {
-		goToBottom();
-		sendSeenToPtachala();
-	}, [messages]);
+		if (selectedUserId) {
+			goToBottom();
+			sendSeenToPtachala();
+		}
+	}, [messages, selectedUserId]);
 
 	// api call to get user messages
 	useEffect(() => {

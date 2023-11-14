@@ -12,44 +12,43 @@ function UserContextProvider({ children }) {
 		() => io(`${import.meta.env.VITE_REACT_APP_WS_URL}`),
 		[]
 	);
+	// const peer = useMemo(
+	// 	() =>
+	// 		new RTCPeerConnection({
+	// 			iceServers: [
+	// 				{
+	// 					urls: [
+	// 						"stun:stun.l.google.com:19302",
+	// 						"stun:global.stun.twilio.com:3478",
+	// 					],
+	// 				},
+	// 			],
+	// 		}),
+	// 	[]
+	// )
+	
+	// const getOffer = async () => {
+	// 	if (peer) {
+	// 		const offer = await peer.createOffer();
+	// 		await peer.setLocalDescription(new RTCSessionDescription(offer));
+	// 		return offer;
+	// 	}
+	// };
 
-	const peer = useMemo(
-		() =>
-			new RTCPeerConnection({
-				iceServers: [
-					{
-						urls: [
-							"stun:stun.l.google.com:19302",
-							"stun:global.stun.twilio.com:3478",
-						],
-					},
-				],
-			}),
-		[]
-	);
+	// const getAnswer = async (offer) => {
+	// 	if (peer) {
+	// 		await peer.setRemoteDescription(offer);
+	// 		const answer = await peer.createAnswer();
+	// 		await peer.setLocalDescription(new RTCSessionDescription(answer));
+	// 		return answer;
+	// 	}
+	// };
 
-	const getOffer = async () => {
-		if (peer) {
-			const offer = await peer.createOffer();
-			await peer.setLocalDescription(new RTCSessionDescription(offer));
-			return offer;
-		}
-	};
-
-	const getAnswer = async (offer) => {
-		if (peer) {
-			await peer.setRemoteDescription(offer);
-			const answer = await peer.createAnswer();
-			await peer.setLocalDescription(new RTCSessionDescription(answer));
-			return answer;
-		}
-	};
-
-	const setRemoteAnswer = async (ans) => {
-		if (peer) {
-			await peer.setRemoteDescription(new RTCSessionDescription(ans));
-		}
-	};
+	// const setRemoteAnswer = async (ans) => {
+	// 	if (peer) {
+	// 		await peer.setRemoteDescription(new RTCSessionDescription(ans));
+	// 	}
+	// };
 
 	const providedUserValue = {
 		username,
@@ -57,10 +56,10 @@ function UserContextProvider({ children }) {
 		id,
 		setId,
 		socket,
-		peer,
-		getOffer,
-		getAnswer,
-		setRemoteAnswer,
+		// peer,
+		// getOffer,
+		// getAnswer,
+		// setRemoteAnswer,
 	};
 
 	const [audioCall, setAudioCall] = useState(false);
