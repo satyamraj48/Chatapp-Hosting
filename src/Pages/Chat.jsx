@@ -244,7 +244,7 @@ function Chat() {
 			goToBottom();
 			sendSeenToPtachala();
 		}
-	}, [messages, selectedUserId]);
+	}, [messages]);
 
 	// api call to get user messages
 	useEffect(() => {

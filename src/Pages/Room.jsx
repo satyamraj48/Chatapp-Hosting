@@ -27,7 +27,7 @@ function Room() {
 	const [incomingCallInfo, setIncomingCallInfo] = useState({});
 	const [callAccept, setCallAccept] = useState(null);
 	const [viewVideoFull, setViewVideoFull] = useState(true);
-
+	const navigate = useNavigate();
 	async function handleIncomingCall({ from, offer, isVideoCall }) {
 		console.log("Incoming Call from ->", from, " and offer is -> ", offer);
 
@@ -60,7 +60,6 @@ function Room() {
 	async function handleCallAccepted({ from, ans }) {
 		console.log("Call Accepted -> ", from, "and answer->", ans);
 		await peer.setRemoteAnswer(ans);
-		// sendStreams();
 	}
 
 	async function handleNegotiationIncoming({ from, offer }) {
@@ -70,7 +69,6 @@ function Room() {
 	async function handleNegotiationFinal({ from, ans }) {
 		console.log("Negotiation Final");
 		await peer.setRemoteAnswer(ans);
-		// sendStreams();
 	}
 
 	function handleCancelVideoCall({ from }) {
@@ -79,6 +77,7 @@ function Room() {
 		setAudioCall(false);
 		setVideoCall(false);
 		navigate("/");
+		window.location.reload();
 	}
 
 	//audio call button click
@@ -184,8 +183,6 @@ function Room() {
 		};
 	}, [handleTrackEvent, peer]);
 
-	const navigate = useNavigate();
-
 	const cancelVideoCall = () => {
 		setMyStream(null);
 		setRemoteStream(null);
@@ -194,10 +191,11 @@ function Room() {
 		setVideoCall(false);
 		navigate("/");
 		socket.emit("cancel:videoCall", { to: remoteSocketId });
+		window.location.reload();
 	};
 
-	const [isAudio, setIsAudio] = useState(true);
-	const [isVideo, setIsVideo] = useState(true);
+	const [isAudio, setIsAudio] = useState(false);
+	const [isVideo, setIsVideo] = useState(false);
 
 	return (
 		<div className="relative bg-doodle-pattern bg-contain w-screen h-screen flex flex-col items-center">
@@ -297,35 +295,19 @@ function Room() {
 			</div>
 			{/* cancel button after call recieved */}
 			{(audioCall || videoCall || callAccept) && (
-				<div className="absolute md:static bottom-5 z-[200] md:my-4 bg-yellow-40 md:h-[70px] flex items-center gap-4">
-					<button
-						className={`bg-red-500 shadow-md text-white rounded-full p-2 md:p-5`}
-						onClick={cancelVideoCall}
-					>
-						<MdCallEnd className="text-2xl" />
-					</button>
-					<button
-						className={`${
-							!isVideo ? "bg-blue-400" : "bg-gray-400"
-						} shadow-md text-white rounded-full p-2 md:p-5 transition-all duration-200`}
-						onClick={() => {
-							if (myStream) {
-								sendStreams();
-								setIsVideo(!isVideo);
-								// myStream.getVideoTracks()[0].enabled = isVideo;
-							}
-						}}
-					>
-						{myStream && !isVideo ? (
-							<BiSolidVideo className="text-2xl" />
-						) : (
-							<BiSolidVideoOff className="text-2xl" />
-						)}
-					</button>
+				<div className="absolute md:static bottom-5 left-5 z-[200] md:my-4 bg-yellow-40 md:h-[70px] flex items-center gap-4">
+					{remoteStream && (
+						<button
+							className={`bg-blue-500 shadow-md text-white rounded-md px-4 py-2`}
+							onClick={sendStreams}
+						>
+							Send Video
+						</button>
+					)}
 					<button
 						className={`${
-							!isAudio ? "bg-green-400" : "bg-gray-400"
-						} shadow-md text-white rounded-full p-2 md:p-5 transition-all duration-200`}
+							!isAudio ? "bg-green-500" : "bg-gray-400"
+						} shadow-md text-white rounded-full p-3 md:p-5 transition-all duration-200`}
 						onClick={() => {
 							if (myStream) {
 								setIsAudio(!isAudio);
@@ -334,10 +316,34 @@ function Room() {
 						}}
 					>
 						{myStream && !isAudio ? (
-							<AiFillAudio className="text-2xl" />
+							<AiFillAudio className="text-2xl md:text-3xl" />
 						) : (
-							<AiOutlineAudioMuted className="text-2xl" />
+							<AiOutlineAudioMuted className="text-2xl md:text-3xl" />
 						)}
+					</button>
+					<button
+						className={`${
+							!isVideo ? "bg-blue-500" : "bg-gray-400"
+						} shadow-md text-white rounded-full p-3 md:p-5 transition-all duration-200`}
+						onClick={() => {
+							if (myStream) {
+								console.log("is-> ", isVideo);
+								setIsVideo(!isVideo);
+								myStream.getVideoTracks()[0].enabled = isVideo;
+							}
+						}}
+					>
+						{myStream && !isVideo ? (
+							<BiSolidVideo className="text-2xl md:text-3xl" />
+						) : (
+							<BiSolidVideoOff className="text-2xl md:text-3xl" />
+						)}
+					</button>
+					<button
+						className={`bg-red-500 shadow-md text-white rounded-full p-3 md:p-5`}
+						onClick={cancelVideoCall}
+					>
+						<MdCallEnd className="text-2xl md:text-3xl" />
 					</button>
 				</div>
 			)}
