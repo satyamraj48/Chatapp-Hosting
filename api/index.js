@@ -44,6 +44,7 @@ app.get("/", (req, res) => {
 const { createServer } = require("http");
 const httpServer = createServer(app);
 const { Server } = require("socket.io");
+const { off } = require("process");
 
 const io = new Server(httpServer, {
 	cors: true,
@@ -161,11 +162,26 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on("user:call", ({ to, offer, isVideoCall }) => {
-		io.to(to).emit("incoming:call", { from: socket.id, offer, isVideoCall });
+		let senderUsername = "";
+		for (const [userId, socketId] of userIdToSocketIdMap) {
+			if (socketId === socket.id) {
+				senderUsername = userIdToUsernameMap.get(userId);
+				break;
+			}
+		}
+		io.to(to).emit("incoming:call", {
+			from: socket.id,
+			fromUsername: senderUsername,
+			offer,
+			isVideoCall,
+		});
 	});
 
 	socket.on("call:accepted", ({ to, ans }) => {
-		io.to(to).emit("call:accepted", { from: socket.id, ans });
+		io.to(to).emit("call:accepted", {
+			from: socket.id,
+			ans,
+		});
 	});
 
 	socket.on("peer:nego:needed", ({ to, offer }) => {
