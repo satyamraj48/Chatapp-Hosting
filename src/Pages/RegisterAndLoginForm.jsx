@@ -2,6 +2,8 @@ import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "./UserContext";
 import toast from "react-hot-toast";
+import Logo from "../components/core/ChatContacts/Logo";
+import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 
 function RegisterAndLoginForm() {
 	const [username, setUsername] = useState("");
@@ -58,51 +60,92 @@ function RegisterAndLoginForm() {
 	}, [socket, handleLoginSuccess]);
 
 	return (
-		<div className="bg-blue-50 h-screen flex items-center font-Poppins">
-			<form onSubmit={handleSubmit} className="mx-auto w-72 mb-12">
-				<input
-					type="text"
-					value={username}
-					onChange={(e) => setUsername(e.target.value)}
-					placeholder="username"
-					className="block w-full rounded-sm p-2 mb-2 border"
-				/>
-				<input
-					type="password"
-					value={password}
-					onChange={(e) => setPassword(e.target.value)}
-					placeholder="password"
-					className="block w-full rounded-sm p-2 mb-2 border"
-				/>
-				<button className="bg-blue-500 text-white w-full rounded-sm p-2">
-					{isLoginOrRegister === "register" ? "Register" : "Login"}
-				</button>
-				<div className="mt-2 text-center">
-					{isLoginOrRegister === "register" ? (
-						<div>
-							Already a member?{" "}
-							<button
-								type="button"
-								className="hover:text-blue-800 hover:underline"
-								onClick={() => setIsLoginOrRegister("login")}
-							>
-								Login here
-							</button>
-						</div>
-					) : (
-						<div>
-							Don't have an account?{" "}
-							<button
-								type="button"
-								className="hover:text-blue-800 hover:underline"
-								onClick={() => setIsLoginOrRegister("register")}
-							>
-								Register here
-							</button>
-						</div>
-					)}
+		<div className="bg-gradient-to-r from-[#e2e2e2] to-[#c9d6ff] min-w-full h-screen flex items-center justify-center font-Poppins">
+			<div
+				className={`relative w-[80%] max-w-[750px] h-[40%] sm:h-[45%] flex items-center bg-white rounded-2xl shadow-2xl shadow-black/20`}
+			>
+				<div
+					className={`w-[50%] h-full px-4 bg-gradient-to-t from-[#3c6bc0] to-[#112da8] text-white ${
+						isLoginOrRegister === "login"
+							? "translate-x-[0%] rounded-br-[110px] rounded-tr-[150px] rounded-l-2xl"
+							: "translate-x-[100%] rounded-bl-[110px] rounded-tl-[150px] rounded-r-2xl"
+					} transition-all duration-700 ease-in-out z-[10]`}
+				>
+					<div
+						className={`${
+							isLoginOrRegister === "login" ? "hidden" : "flex"
+						} flex-col items-center justify-center h-full bg-yellow-30 text-center`}
+					>
+						<p className="text-[24px] sm:text-[28px] font-semibold">
+							Welcome Back!
+						</p>
+						<p className="mt-8 w-[80%] text-xs tracking-wide ">
+							Enter your personal setails to use all of site features
+						</p>
+						<button
+							className="mt-8 text-xs sm:text-md text-white w-fit rounded-lg px-4 sm:px-8 py-2 border uppercase"
+							onClick={() => setIsLoginOrRegister("login")}
+						>
+							Sign In
+						</button>
+					</div>
+					<div
+						className={`${
+							isLoginOrRegister === "login" ? "flex" : "hidden"
+						} flex-col items-center justify-center h-full bg-yellow-30 text-center`}
+					>
+						<p className="text-[24px] sm:text-[28px] font-semibold">
+							Hello, Friend!
+						</p>
+						<p className="mt-8 w-[80%] text-xs tracking-wide ">
+							Register with your personal details to use all of site features
+						</p>
+						<button
+							className="mt-8 text-xs sm:text-md text-white w-fit rounded-lg px-4 sm:px-8 py-2 border uppercase"
+							onClick={() => setIsLoginOrRegister("register")}
+						>
+							Sign Up
+						</button>
+					</div>
 				</div>
-			</form>
+
+				<form
+					onSubmit={handleSubmit}
+					className={`px-6 bg-pink-30 w-[50%] h-full flex flex-col items-center justify-center ${
+						isLoginOrRegister === "login"
+							? "translate-x-[0%]"
+							: "translate-x-[-100%]"
+					} transition-all duration-700 ease-in-out`}
+				>
+					<p className="mb-4 text-[30px] font-semibold text-center">
+						{isLoginOrRegister === "login" ? "Sign In" : "Create Account"}
+					</p>
+					<input
+						type="text"
+						value={username}
+						onChange={(e) => setUsername(e.target.value)}
+						placeholder="username"
+						className="bg-red-50 w-[90%] rounded-lg p-2 pl-3 placeholder:opacity-60 outline-none text-md"
+					/>
+					<input
+						type="password"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						placeholder="password"
+						className="mt-3 bg-red-50 w-[90%] rounded-lg p-2 pl-3 placeholder:opacity-60 outline-none text-md"
+					/>
+					<button className="mt-8 bg-blue-600 text-white w-fit rounded-lg px-6 py-2 uppercase">
+						{isLoginOrRegister === "register" ? "Sign Up" : "Login"}
+					</button>
+					{/* logo */}
+					<div className="absolute bottom-2 flex items-center gap-1 opacity- text-blue-60 font-bold">
+						<HiMiniChatBubbleLeftRight className="text-xs text-blue-400" />
+						<span className="bg-gradient-to-tr from-blue-500 to-blue-400 bg-clip-text text-transparent text-sm">
+							ChatApp
+						</span>
+					</div>
+				</form>
+			</div>
 		</div>
 	);
 }

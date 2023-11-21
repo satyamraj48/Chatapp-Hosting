@@ -1,14 +1,21 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const app = express();
+const bodyParser = require("body-parser");
+
 const { dbConnect } = require("./config/database");
+const { cloudinaryConnect } = require("./config/cloudinary");
+const { uploadImageToCloudinary } = require("./utils/imageUploader");
+
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+
 const userRoutes = require("./routes/User");
-const jwt = require("jsonwebtoken");
+
 const Message = require("./models/Message");
-const { fs } = require("file-system");
 const MessageSeen = require("./models/MessageSeen");
+
+const jwt = require("jsonwebtoken");
+const fileUpload = require("express-fileupload");
 const Buffer = require("buffer/").Buffer;
 
 require("dotenv").config();
@@ -17,15 +24,23 @@ const PORT = process.env.PORT;
 //databse connect
 dbConnect();
 
+// cloudinary connect
+cloudinaryConnect();
+
 //middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json());
-app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(
 	cors({
 		origin: true,
 		credentials: true,
+	})
+);
+app.use(
+	fileUpload({
+		useTempFiles: true,
+		tempFileDir: "/tmp/",
 	})
 );
 
@@ -44,7 +59,6 @@ app.get("/", (req, res) => {
 const { createServer } = require("http");
 const httpServer = createServer(app);
 const { Server } = require("socket.io");
-const { off } = require("process");
 
 const io = new Server(httpServer, {
 	cors: true,
@@ -93,11 +107,11 @@ io.on("connection", (socket) => {
 						const decode = jwt.verify(token, process.env.JWT_SECRET);
 						// console.log("decode-> ", decode);
 						const { id: userId, username } = decode;
-						socket.userId = userId;
-						socket.username = username;
+
 						//map user Id to Socket Id
 						userIdToSocketIdMap.set(userId, socket.id);
-						userIdToUsernameMap.set(userId, socket.username);
+						userIdToUsernameMap.set(userId, username);
+
 						//notify all about online people
 						notifyAboutOnlinePeople();
 					} catch (error) {
@@ -117,11 +131,10 @@ io.on("connection", (socket) => {
 				const { id: userId, username } = decode;
 				socket.emit("login:success", { userId, username });
 
-				socket.userId = userId;
-				socket.username = username;
 				//map user Id to Socket Id
 				userIdToSocketIdMap.set(userId, socket.id);
-				userIdToUsernameMap.set(userId, socket.username);
+				userIdToUsernameMap.set(userId, username);
+
 				//notify all about online people
 				notifyAboutOnlinePeople();
 			} catch (error) {
@@ -162,19 +175,21 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on("user:call", ({ to, offer, isVideoCall }) => {
-		let senderUsername = "";
+		let senderUsername = null;
 		for (const [userId, socketId] of userIdToSocketIdMap) {
 			if (socketId === socket.id) {
 				senderUsername = userIdToUsernameMap.get(userId);
 				break;
 			}
 		}
-		io.to(to).emit("incoming:call", {
-			from: socket.id,
-			fromUsername: senderUsername,
-			offer,
-			isVideoCall,
-		});
+		if (senderUsername) {
+			io.to(to).emit("incoming:call", {
+				from: socket.id,
+				fromUsername: senderUsername,
+				offer,
+				isVideoCall,
+			});
+		}
 	});
 
 	socket.on("call:accepted", ({ to, ans }) => {
@@ -194,36 +209,48 @@ io.on("connection", (socket) => {
 
 	socket.on("outgoing:message", async (messageData) => {
 		const { recipient, text, file, sentAt } = messageData;
-		// console.log("in IO", text);
-		let filename = null;
+		let imageSecureUrl = null;
+		console.log("be-> imageFile--> ", file);
 
-		if (file) {
-			// console.log(file);
-			const parts = file.info.split(".");
-			const ext = parts[parts.length - 1];
-			filename = Date.now() + "." + ext;
-			const path = __dirname + "/uploads/" + filename;
-			const bufferData = new Buffer(file.data.split(",")[1], "base64");
-			fs.writeFile(path, bufferData, () => {
-				console.log("file saved: " + path);
-			});
+		if (!file) {
+			try {
+				const uploadedImage = await uploadImageToCloudinary(
+					file,
+					process.env.FOLDER_NAME
+					// 1000,
+					// 1000
+				);
+				imageSecureUrl = uploadedImage.secure_url;
+				console.log("img url --> ", imageSecureUrl);
+			} catch (error) {
+				console.log("Cloudinary Error....", error);
+			}
 		}
 		if (recipient && (text || file)) {
 			//save in DB
-			const messageDoc = await Message.create({
-				sender: socket.userId,
-				recipient: recipient,
-				text: text,
-				file: file ? filename : null,
-				sentAt: sentAt,
-			});
-			//send message to the recipient
+			let senderUserId = null;
 			for (const [userId, socketId] of userIdToSocketIdMap) {
-				if (userId === recipient) {
+				if (socketId === socket.id) {
+					senderUserId = userId;
+					break;
+				}
+			}
+			if (senderUserId) {
+				const messageDoc = await Message.create({
+					sender: senderUserId,
+					recipient: recipient,
+					text: text,
+					file: file ? file : null,
+					sentAt: sentAt,
+				});
+
+				//send message to the recipient
+				const socketId = userIdToSocketIdMap.get(recipient);
+				if (socketId) {
 					io.to(socketId).emit("incoming:message", {
 						text: text,
-						file: file ? filename : null,
-						sender: socket.userId,
+						file: file ? file : null,
+						sender: senderUserId,
 						recipient: recipient,
 						_id: messageDoc._id,
 						sentAt: sentAt,
@@ -235,30 +262,38 @@ io.on("connection", (socket) => {
 
 	socket.on("seen:message", async ({ ptachala, seenAt }) => {
 		if (ptachala && seenAt) {
-			// seenAt -> is(dekha) user ka seen time
-			const messageSeenDetails = await MessageSeen.findOne({
-				dekha: socket.userId,
-				ptachala: ptachala,
-			});
-
-			if (messageSeenDetails) {
-				await MessageSeen.findOneAndUpdate(
-					{ dekha: socket.userId, ptachala: ptachala },
-					{ seenAt: seenAt }
-				);
-			} else {
-				await MessageSeen.create({
-					dekha: socket.userId,
-					ptachala: ptachala,
-					seenAt: seenAt,
-				});
-			}
-			// console.log("ptachala");
-
+			let dekhaUserId = null;
 			for (const [userId, socketId] of userIdToSocketIdMap) {
-				if (userId === ptachala) {
+				if (socketId === socket.id) {
+					dekhaUserId = userId;
+					break;
+				}
+			}
+			if (dekhaUserId) {
+				// seenAt -> is(dekha) user ka seen time
+				const messageSeenDetails = await MessageSeen.findOne({
+					dekha: dekhaUserId,
+					ptachala: ptachala,
+				});
+
+				if (messageSeenDetails) {
+					await MessageSeen.findOneAndUpdate(
+						{ dekha: dekhaUserId, ptachala: ptachala },
+						{ seenAt: seenAt }
+					);
+				} else {
+					await MessageSeen.create({
+						dekha: dekhaUserId,
+						ptachala: ptachala,
+						seenAt: seenAt,
+					});
+				}
+				// console.log("ptachala");
+
+				const socketId = userIdToSocketIdMap.get(ptachala);
+				if (socketId) {
 					io.to(socketId).emit("seenAt:message", {
-						dekha: socket.userId,
+						dekha: dekhaUserId,
 						ptachala: ptachala,
 						seenAt: seenAt,
 					});

@@ -28,21 +28,25 @@ function Chat() {
 	const [showList, setShowList] = useState(true);
 	const [messageSeenAt, setMessageSeenAt] = useState(null);
 	const divUnderMessages = useRef();
+	const fileInputRef = useRef(null);
 
 	const { id, username, setId, setUsername, socket } = useContext(UserContext);
 	const { setAudioCall, setVideoCall, setRemoteSocketId } =
 		useContext(CallContext);
 	const navigate = useNavigate();
 
+	const [imageFile, setImageFile] = useState(null);
+	const [previewSource, setPreviewSource] = useState(null);
+
 	function handleOnlineUsers({ onlinePeople }) {
 		// console.log("->>>> ", onlinePeople);
 		showOnlinePeople(onlinePeople);
 	}
 	function handleIncomingMessage(messageData) {
-		// console.log("->>>> ", messageData);
+		// console.log("incoming msg--> ", messageData);
 		if (messageData.sender === selectedUserId) {
-			// console.log("message set");
 			setMessages((prev) => [...prev, { ...messageData }]);
+			// console.log("message set");
 		}
 	}
 	function handleSeenAtMessage(messageData) {
@@ -142,18 +146,19 @@ function Chat() {
 		}
 	}
 
-	function sendMessage(e, file = null) {
+	function sendMessage(e) {
 		if (e) e.preventDefault();
 		// setLoadingMsg(true);
-
+		// console.log("recipient--> ", selectedUserId, " - text--> ", newMessageText);
+		console.log("fe-> image File--> ", imageFile);
 		socket.emit("outgoing:message", {
 			recipient: selectedUserId,
 			text: newMessageText,
-			file: file,
+			file: { imageFile },
 			sentAt: new Date(),
 		});
 
-		if (!file) {
+		if (newMessageText) {
 			setMessages((prev) => [
 				...prev,
 				{
@@ -164,12 +169,15 @@ function Chat() {
 					sentAt: new Date(),
 				},
 			]);
-		} else {
+		}
+		if (imageFile) {
 			axios
 				.get("/auth/messages/" + selectedUserId)
 				.then((res) => setMessages(res.data.data));
 		}
 		setNewMessageText("");
+		setImageFile(null);
+		setPreviewSource(null);
 		// setLoadingMsg(false);
 	}
 
@@ -192,23 +200,29 @@ function Chat() {
 		});
 	}
 
-	function handleSendFile(e) {
+	function handleFileChange(e) {
+		const file = e.target.files[0];
+		if (file) {
+			// setImageFile(file);
+			console.log("imageFile--> ", file);
+			previewFile(file);
+		}
+		console.log("ps-> ", previewSource);
+	}
+
+	function previewFile(file) {
 		const reader = new FileReader();
-		reader.readAsDataURL(e.target.files[0]);
-		reader.onload = () => {
-			const file = reader.result;
-			sendMessage(null, { info: e.target.files[0].name, data: file });
+		reader.readAsDataURL(file);
+		reader.onloadend = () => {
+			setPreviewSource(reader.result);
+			setImageFile(reader.result);
+			// console.log("reader result--> ", reader.result);
 		};
-		// console.log(e.target.files[0]);
 	}
 
 	function isInViewport(element) {
 		if (element) {
 			const rect = element.getBoundingClientRect();
-			// console.log("elem", rect.top);
-			// console.log("elem", rect.left);
-			// console.log("elem", rect.bottom);
-			// console.log("elem", rect.right);
 			return (
 				rect.top >= 0 &&
 				rect.left >= 0 &&
@@ -228,7 +242,7 @@ function Chat() {
 	function sendSeenToPtachala() {
 		const box = document.querySelector(".seenBox");
 		const isInViewportBox = isInViewport(box);
-		console.log("isinViewport->  ", isInViewportBox);
+		// console.log("isinViewport->  ", isInViewportBox);
 		// console.log("viewport selected->  ", selectedUserId);
 		if (selectedUserId) {
 			socket.emit("seen:message", {
@@ -344,10 +358,7 @@ function Chat() {
 	}
 
 	return (
-		<div
-			className="relative h-screen flex tracking-wide font-Poppins"
-			// onScroll={() => setIsScroll(true)}
-		>
+		<div className="relative h-screen flex tracking-wide font-Poppins">
 			<LogoAnimate />
 
 			<button
@@ -367,7 +378,6 @@ function Chat() {
 			>
 				{/* logo and contacts */}
 				<div className="flex-grow">
-					{/* <div></div> */}
 					<Logo />
 					{/* contacts list */}
 					<div className="space-y-0">
@@ -539,6 +549,7 @@ function Chat() {
 															>
 																{message.text}
 															</span>
+
 															{message.file && (
 																<div>
 																	<a
@@ -591,6 +602,29 @@ function Chat() {
 												</div>
 											</div>
 										))}
+										{previewSource && (
+											<div className="fixed z-[400] inset-0 flex flex-col items-center justify-center backdrop-blur-sm">
+												<button
+													className="mb-2 bg-black px-3 py-1 rounded-md text-white shadow-lg"
+													onClick={() => {
+														setImageFile(null);
+														setPreviewSource(null);
+													}}
+												>
+													Close
+												</button>
+												<img
+													src={previewSource}
+													className="h-[70%] object-cover rounded-lg shadow-lg"
+												/>
+												<button
+													className="mt-5 bg-blue-500 px-3 py-1 rounded-md text-white shadow-lg"
+													onClick={sendMessage}
+												>
+													Send
+												</button>
+											</div>
+										)}
 										<div ref={divUnderMessages}></div>
 									</div>
 								</div>
@@ -624,14 +658,16 @@ function Chat() {
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
 									type="file"
-									onChange={handleSendFile}
+									// ref={fileInputRef}
+									onChange={handleFileChange}
 									className="hidden"
+									accept="image/png, image/jpg, image/jpeg"
 								/>
 								<GrAttachment />
 							</label>
 							<button
 								type="submit"
-								disabled={!!!newMessageText}
+								// disabled={!(!!newMessageText || !!imageFile)}
 								className={`bg-blue-600 rounded-full text-white drop-shadow-md shadow-lg p-3`}
 							>
 								<IoSend className="text-md" />
