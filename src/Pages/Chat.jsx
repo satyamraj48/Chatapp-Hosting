@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { IoSend } from "react-icons/io5";
+import { IoClose, IoSend } from "react-icons/io5";
 import { GrAttachment } from "react-icons/gr";
 import Logo from "../components/core/ChatContacts/Logo";
 import { CallContext, UserContext } from "./UserContext";
@@ -10,8 +10,8 @@ import Contact from "./Contact";
 import { HiUser } from "react-icons/hi2";
 import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
+import { FiSend } from "react-icons/fi";
 import { IoMdArrowBack, IoMdCall } from "react-icons/io";
-import { LuTriangleRight } from "react-icons/lu";
 import { BiSolidVideo } from "react-icons/bi";
 import LogoAnimate from "./LogoAnimate";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +28,7 @@ function Chat() {
 	const [showList, setShowList] = useState(true);
 	const [messageSeenAt, setMessageSeenAt] = useState(null);
 	const divUnderMessages = useRef();
-	const fileInputRef = useRef(null);
+	const videoPlayRef = useRef(null);
 
 	const { id, username, setId, setUsername, socket } = useContext(UserContext);
 	const { setAudioCall, setVideoCall, setRemoteSocketId } =
@@ -37,6 +37,7 @@ function Chat() {
 
 	const [imageFile, setImageFile] = useState(null);
 	const [previewSource, setPreviewSource] = useState(null);
+	const [showFileModal, setShowFileModal] = useState(null);
 
 	function handleOnlineUsers({ onlinePeople }) {
 		// console.log("->>>> ", onlinePeople);
@@ -146,19 +147,32 @@ function Chat() {
 		}
 	}
 
-	function sendMessage(e) {
+	async function sendMessage(e) {
 		if (e) e.preventDefault();
-		// setLoadingMsg(true);
 		// console.log("recipient--> ", selectedUserId, " - text--> ", newMessageText);
-		console.log("fe-> image File--> ", imageFile);
+
+		setPreviewSource(null);
+
+		const sentAtTime = new Date();
+		const fileId = Date.now();
+
+		const formData = new FormData();
+		formData.append("imageFile", imageFile);
+		formData.append("sentAt", sentAtTime);
+		formData.append("fileId", fileId);
+
+		if (imageFile) {
+			await axios.post("/auth/sendImage/" + selectedUserId, formData);
+		}
+
 		socket.emit("outgoing:message", {
 			recipient: selectedUserId,
-			text: newMessageText,
-			file: { imageFile },
-			sentAt: new Date(),
+			text: newMessageText ? newMessageText : null,
+			file: imageFile ? fileId : null,
+			sentAt: sentAtTime,
 		});
 
-		if (newMessageText) {
+		if (!imageFile) {
 			setMessages((prev) => [
 				...prev,
 				{
@@ -166,19 +180,16 @@ function Chat() {
 					sender: id,
 					recipient: selectedUserId,
 					_id: Date.now(),
-					sentAt: new Date(),
+					sentAt: sentAtTime,
 				},
 			]);
-		}
-		if (imageFile) {
-			axios
+		} else {
+			await axios
 				.get("/auth/messages/" + selectedUserId)
 				.then((res) => setMessages(res.data.data));
 		}
 		setNewMessageText("");
 		setImageFile(null);
-		setPreviewSource(null);
-		// setLoadingMsg(false);
 	}
 
 	function showOnlinePeople(peopleArray) {
@@ -203,11 +214,10 @@ function Chat() {
 	function handleFileChange(e) {
 		const file = e.target.files[0];
 		if (file) {
-			// setImageFile(file);
-			console.log("imageFile--> ", file);
+			// console.log("imageFile--> ", file);
+			setImageFile(file);
 			previewFile(file);
 		}
-		console.log("ps-> ", previewSource);
 	}
 
 	function previewFile(file) {
@@ -215,7 +225,6 @@ function Chat() {
 		reader.readAsDataURL(file);
 		reader.onloadend = () => {
 			setPreviewSource(reader.result);
-			setImageFile(reader.result);
 			// console.log("reader result--> ", reader.result);
 		};
 	}
@@ -360,17 +369,8 @@ function Chat() {
 	return (
 		<div className="relative h-screen flex tracking-wide font-Poppins">
 			<LogoAnimate />
-
-			<button
-				className={`absolute left-[50%] sm:left-[54%] top-4 ${
-					!showList && "hidden"
-				} md:hidden z-[260] text-2xl active:scale-90`}
-				onClick={() => setShowList(false)}
-			>
-				<RxCross2 className="text-blue-300 hover:bg-blue-600 hover:rounded-full" />
-			</button>
 			<div
-				className={`pt-6 absolute md:static z-[250] h-screen w-[60%] md:w-[330px] flex flex-col bg-transparent backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
+				className={`pt-6 absolute md:static z-[250] h-screen w-[60%] max-w-[330px] flex flex-col bg-blue-50 backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 					showList
 						? "translate-x-0 opacity-100"
 						: "translate-x-[-100%] opacity-0"
@@ -378,6 +378,16 @@ function Chat() {
 			>
 				{/* logo and contacts */}
 				<div className="flex-grow">
+					<div className="w-full flex items-center justify-end">
+						<button
+							className={`mr-3 ${
+								!showList && "hidden"
+							} md:hidden z-[260] active:scale-90`}
+							onClick={() => setShowList(false)}
+						>
+							<RxCross2 className="text-2xl text-blue-500 bg-blue-100 hover:bg-blue-200 p-1 rounded-full transition-all duration-200" />
+						</button>
+					</div>
 					<Logo />
 					{/* contacts list */}
 					<div className="space-y-0">
@@ -516,25 +526,31 @@ function Chat() {
 												</div>
 
 												<div
-													className={`seenBox relative inline-block max-w-[70%] shadow-md shadow-black/10 ${
-														message.sender === id
-															? "bg-blue-500 text-white"
-															: "bg-white text-black"
-													} ${
-														loadingMsg &&
-														index === messagesWithoutDupes.length - 1 &&
-														"bg-gray-400"
-													} text-sm text-left rounded-md space-y-`}
+													className={`seenBox relative inline-block max-w-[70%] shadow-black/10 ${
+														message.file
+															? "bg-transparent"
+															: message.sender === id
+															? "bg-blue-500 text-white shadow-md"
+															: "bg-white text-black shadow-md"
+													} text-sm text-left rounded-md space-y-1`}
 												>
-													<div
-														className={`absolute z-[10] ${
-															message.sender === id
-																? "-right-2 rotate-180 text-blue-500"
-																: "-left-2 -rotate-90 text-white"
-														} w-3 h-3`}
-													>
-														<LuTriangleRight />
-													</div>
+													{!message.file && (
+														<div
+															className={`absolute z-[10] ${
+																message.sender === id
+																	? "-right-1 rotate-180 text-blue-500"
+																	: "-left-1 -rotate-90 text-white"
+															} w-3 h-3`}
+														>
+															<div
+																className={`w-0 h-0 border-l-[10px] border-l-transparent border-r-[1px]  border-b-[10px] rounded-sm ${
+																	message.sender === id
+																		? "border-r-blue-500 border-b-blue-500"
+																		: "border-r-white border-b-white"
+																}`}
+															></div>
+														</div>
+													)}
 													{loadingMsg &&
 													index === messagesWithoutDupes.length - 1 ? (
 														<div className="animate-pulse text-white tracking-wide px-5 py-2">
@@ -542,37 +558,48 @@ function Chat() {
 														</div>
 													) : (
 														<div className="mx-2 mt-1">
-															<span
-																className={`${
-																	message.text.length > 30 && "break-words"
-																}`}
-															>
-																{message.text}
-															</span>
+															{message.text && (
+																<span
+																	className={`${
+																		message?.text?.length > 30 && "break-words"
+																	}`}
+																>
+																	{message.text}
+																</span>
+															)}
 
-															{message.file && (
+															{message?.file && (
 																<div>
-																	<a
-																		target="_blank"
-																		href={
-																			"http://localhost:4000/uploads/" +
-																			message.file
-																		}
-																		className="flex items-center gap-1 hover:text-red-500 underline"
-																	>
-																		<GrAttachment />
-																		{message.file}
-																	</a>
+																	{message.file.includes("/image/") ? (
+																		<img
+																			src={message.file}
+																			className="h-60 object-contain rounded-lg drop-shadow-md cursor-pointer"
+																			onClick={() =>
+																				setShowFileModal(message.file)
+																			}
+																		/>
+																	) : (
+																		<video
+																			src={message.file}
+																			playsInline={true}
+																			className="w-80 object-contain rounded-lg drop-shadow-md cursor-pointer"
+																			onClick={() =>
+																				setShowFileModal(message.file)
+																			}
+																		></video>
+																	)}
 																</div>
 															)}
 															{/* date and seen(tick) */}
 															<p
 																className={`ml-2 ${
-																	message.text.length > 30 || message.file
-																		? "flex"
+																	message?.text?.length > 30 || message?.file
+																		? "mt-1 flex"
 																		: "inline-flex"
 																} items-center justify-end gap-[2px] text-[10px] ${
-																	message.sender === id
+																	message.file
+																		? "text-black"
+																		: message.sender === id
 																		? "text-blue-200"
 																		: "text-gray-600"
 																}`}
@@ -590,7 +617,9 @@ function Chat() {
 																		message.sender !== id && "hidden"
 																	} ${
 																		checkIsSeen(message?.sentAt, index)
-																			? "text-white"
+																			? message.file
+																				? "text-blue-500"
+																				: "text-white"
 																			: "text-gray-400"
 																	} `}
 																>
@@ -602,29 +631,7 @@ function Chat() {
 												</div>
 											</div>
 										))}
-										{previewSource && (
-											<div className="fixed z-[400] inset-0 flex flex-col items-center justify-center backdrop-blur-sm">
-												<button
-													className="mb-2 bg-black px-3 py-1 rounded-md text-white shadow-lg"
-													onClick={() => {
-														setImageFile(null);
-														setPreviewSource(null);
-													}}
-												>
-													Close
-												</button>
-												<img
-													src={previewSource}
-													className="h-[70%] object-cover rounded-lg shadow-lg"
-												/>
-												<button
-													className="mt-5 bg-blue-500 px-3 py-1 rounded-md text-white shadow-lg"
-													onClick={sendMessage}
-												>
-													Send
-												</button>
-											</div>
-										)}
+
 										<div ref={divUnderMessages}></div>
 									</div>
 								</div>
@@ -661,13 +668,13 @@ function Chat() {
 									// ref={fileInputRef}
 									onChange={handleFileChange}
 									className="hidden"
-									accept="image/png, image/jpg, image/jpeg"
+									accept="image/png, image/jpg, image/jpeg, video/mp4"
 								/>
 								<GrAttachment />
 							</label>
 							<button
 								type="submit"
-								// disabled={!(!!newMessageText || !!imageFile)}
+								disabled={!!!newMessageText}
 								className={`bg-blue-600 rounded-full text-white drop-shadow-md shadow-lg p-3`}
 							>
 								<IoSend className="text-md" />
@@ -676,6 +683,75 @@ function Chat() {
 					</>
 				)}
 			</div>
+			{previewSource && (
+				<div className="fixed inset-0 z-[400] flex flex-col items-center justify-center backdrop-blur-md bg-white/10">
+					{imageFile.type.includes("image") ? (
+						<img
+							src={previewSource}
+							className="h-[70%] object-cover rounded-lg shadow-lg"
+						/>
+					) : (
+						<video
+							src={previewSource}
+							className="h-[40%] object-contain rounded-lg drop-shadow-md"
+						></video>
+					)}
+					<div className="mt-5 flex items-center gap-4">
+						<button
+							className="bg-gray-600 px-5 py-3 rounded-lg shadow-lg group"
+							onClick={() => {
+								setImageFile(null);
+								setPreviewSource(null);
+							}}
+						>
+							<div className="flex items-center gap-1 text-white">
+								<span>Cancel</span>
+								<IoClose className="text-xl group-hover:text-red-500" />
+							</div>
+						</button>
+						<button
+							className="bg-blue-500 px-5 py-3 rounded-lg shadow-lg group"
+							onClick={sendMessage}
+						>
+							<div className="flex items-center gap-1 text-white">
+								<span>Send</span>
+								<FiSend className="text-lg text-white group-hover:scale-110" />
+							</div>
+						</button>
+					</div>
+				</div>
+			)}
+			{showFileModal && (
+				<div className="fixed inset-0 z-[400] w-full h-full flex items-center justify-center backdrop-blur-lg bg-white/10">
+					<div className="w-[80%] bg-transparent rounded-md flex items-center justify-center">
+						<div className="mx-10 my-8 w-[80%] max-h-screen flex flex-col items-end gap-2">
+							<button
+								className="bg-gray-50 text-black font-semibold drop-shadow-lg hover:bg-gray-100 hover:drop-shadow-md p-[2px] rounded-full"
+								onClick={() => {
+									setShowFileModal(null);
+								}}
+							>
+								<IoClose className="text-xl text-gray-700" />
+							</button>
+							{showFileModal.includes("/image/") ? (
+								<img
+									src={showFileModal}
+									className="h-[60%] object-contain rounded-lg drop-shadow-md cursor-pointer"
+								/>
+							) : (
+								<video
+									src={showFileModal}
+									ref={videoPlayRef}
+									onClick={() => {
+										videoPlayRef.current.play();
+									}}
+									className="h-[40%] lg:h-[60%] object-contain rounded-lg drop-shadow-md"
+								></video>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

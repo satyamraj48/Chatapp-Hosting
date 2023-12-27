@@ -5,10 +5,10 @@ exports.uploadImageToCloudinary = async (file, folder, height, quality) => {
 	const options = { folder };
 	if (height) options.height = height;
 	if (quality) options.quality = quality;
-	options.resource_type = "image";
+	options.resource_type = "auto";
 	// options.public_id = Date.now();
-	console.log("cloud file--> ", file);
-	console.log("options--> ", options);
+	// console.log("cloud file--> ", file);
+	// console.log("options--> ", options);
 
 	return await cloudinary.uploader.upload(file.tempFilePath, options);
 };

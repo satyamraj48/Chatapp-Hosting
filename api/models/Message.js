@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const MessageSchema = new mongoose.Schema(
 	{
+		fileId: String,
 		sender: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",

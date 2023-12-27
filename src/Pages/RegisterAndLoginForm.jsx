@@ -2,7 +2,6 @@ import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "./UserContext";
 import toast from "react-hot-toast";
-import Logo from "../components/core/ChatContacts/Logo";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 
 function RegisterAndLoginForm() {
@@ -62,7 +61,7 @@ function RegisterAndLoginForm() {
 	return (
 		<div className="bg-gradient-to-r from-[#e2e2e2] to-[#c9d6ff] min-w-full h-screen flex items-center justify-center font-Poppins">
 			<div
-				className={`relative w-[80%] max-w-[750px] h-[40%] sm:h-[45%] flex items-center bg-white rounded-2xl shadow-2xl shadow-black/20`}
+				className={`relative w-[80%] max-w-[750px] h-[40%] min-h-[280px] sm:h-[45%] md:h-[50%] flex items-center bg-white rounded-2xl shadow-2xl shadow-black/20`}
 			>
 				<div
 					className={`w-[50%] h-full px-4 bg-gradient-to-t from-[#3c6bc0] to-[#112da8] text-white ${
@@ -134,7 +133,7 @@ function RegisterAndLoginForm() {
 						placeholder="password"
 						className="mt-3 bg-red-50 w-[90%] rounded-lg p-2 pl-3 placeholder:opacity-60 outline-none text-md"
 					/>
-					<button className="mt-8 bg-blue-600 text-white w-fit rounded-lg px-6 py-2 uppercase">
+					<button className="mt-8 mb-3 bg-blue-600 text-white w-fit rounded-lg px-6 py-2 uppercase">
 						{isLoginOrRegister === "register" ? "Sign Up" : "Login"}
 					</button>
 					{/* logo */}

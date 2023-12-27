@@ -209,23 +209,7 @@ io.on("connection", (socket) => {
 
 	socket.on("outgoing:message", async (messageData) => {
 		const { recipient, text, file, sentAt } = messageData;
-		let imageSecureUrl = null;
-		console.log("be-> imageFile--> ", file);
 
-		if (!file) {
-			try {
-				const uploadedImage = await uploadImageToCloudinary(
-					file,
-					process.env.FOLDER_NAME
-					// 1000,
-					// 1000
-				);
-				imageSecureUrl = uploadedImage.secure_url;
-				console.log("img url --> ", imageSecureUrl);
-			} catch (error) {
-				console.log("Cloudinary Error....", error);
-			}
-		}
 		if (recipient && (text || file)) {
 			//save in DB
 			let senderUserId = null;
@@ -236,24 +220,34 @@ io.on("connection", (socket) => {
 				}
 			}
 			if (senderUserId) {
-				const messageDoc = await Message.create({
-					sender: senderUserId,
-					recipient: recipient,
-					text: text,
-					file: file ? file : null,
-					sentAt: sentAt,
-				});
+				let messageDoc = null;
+				if (text) {
+					messageDoc = await Message.create({
+						sender: senderUserId,
+						recipient: recipient,
+						text: text,
+						sentAt: sentAt,
+					});
+				} else {
+					messageDoc = await Message.findOne({
+						sender: senderUserId,
+						recipient: recipient,
+						fileId: file,
+					});
+				}
+
+				// console.log("msg Doc--> ", messageDoc);
 
 				//send message to the recipient
 				const socketId = userIdToSocketIdMap.get(recipient);
-				if (socketId) {
+				if (socketId && messageDoc) {
 					io.to(socketId).emit("incoming:message", {
-						text: text,
-						file: file ? file : null,
+						text: text ? text : null,
+						file: file ? messageDoc.file : null,
 						sender: senderUserId,
 						recipient: recipient,
 						_id: messageDoc._id,
-						sentAt: sentAt,
+						sentAt: messageDoc.sentAt,
 					});
 				}
 			}

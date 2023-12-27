@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const { login, signup, profile, logout } = require("../controllers/Auth");
 const { auth } = require("../middlewares/auth");
-const { getMessages, getOnlinePeople } = require("../controllers/Message");
+const {
+	getMessages,
+	getOnlinePeople,
+	saveImages,
+} = require("../controllers/Message");
 const { getSeenAt } = require("../controllers/MessageSeen");
 
 //route for user signup
@@ -13,6 +17,9 @@ router.post("/login", login);
 
 //route for user logout
 router.post("/logout", auth, logout);
+
+//route for user logout
+router.post("/sendImage/:selectedUserId", auth, saveImages);
 
 //router for profile
 router.get("/profile", auth, profile);
