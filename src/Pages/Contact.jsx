@@ -3,6 +3,7 @@ import Avatar from "../components/core/ChatContacts/Avatar";
 import useOnClickOutside from "../hooks/useOnClickOutside";
 
 function Contact({ id, selected, onClick, username, online, setShowList }) {
+
 	const clickOutsideRef = useRef();
 	useOnClickOutside(clickOutsideRef, () => setShowList(false));
 
@@ -13,7 +14,7 @@ function Contact({ id, selected, onClick, username, online, setShowList }) {
 				selected ? "bg-white shadow-md" : "hover:bg-gray-200 drop-shadow-sm"
 			} 
     `}
-			onClick={() => onClick(id)}
+			onClick={onClick}
 			ref={clickOutsideRef}
 		>
 			{selected && <div className="w-1 h-14 bg-blue-600 rounded-r-md "></div>}

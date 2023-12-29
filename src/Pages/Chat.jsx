@@ -1,20 +1,17 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { IoClose, IoSend } from "react-icons/io5";
+import { IoSend } from "react-icons/io5";
 import { GrAttachment } from "react-icons/gr";
-import Logo from "../components/core/ChatContacts/Logo";
 import { CallContext, UserContext } from "./UserContext";
 import { BsArrowDownShort, BsArrowLeft } from "react-icons/bs";
 import { uniqBy } from "lodash";
 import axios from "axios";
-import Contact from "./Contact";
-import { HiUser } from "react-icons/hi2";
-import { RxCross2 } from "react-icons/rx";
 import { RiCheckDoubleFill } from "react-icons/ri";
-import { FiSend } from "react-icons/fi";
-import { IoMdArrowBack, IoMdCall } from "react-icons/io";
-import { BiSolidVideo } from "react-icons/bi";
 import LogoAnimate from "./LogoAnimate";
 import { useNavigate } from "react-router-dom";
+import ShowFileModal from "../components/core/ChatModal/ShowFileModal";
+import Sidebar from "../components/core/Sidebar";
+import DetailsBar from "../components/core/DetailsBar";
+import PreviewMediaModal from "../components/core/ChatModal/PreviewMediaModal";
 
 function Chat() {
 	const [onlinePeople, setOnlinePeople] = useState({});
@@ -27,17 +24,16 @@ function Chat() {
 	const [isScroll, setIsScroll] = useState(false);
 	const [showList, setShowList] = useState(true);
 	const [messageSeenAt, setMessageSeenAt] = useState(null);
-	const divUnderMessages = useRef();
-	const videoPlayRef = useRef(null);
+	const divUnderMessagesRef = useRef();
 
 	const { id, username, setId, setUsername, socket } = useContext(UserContext);
 	const { setAudioCall, setVideoCall, setRemoteSocketId } =
 		useContext(CallContext);
-	const navigate = useNavigate();
 
 	const [imageFile, setImageFile] = useState(null);
-	const [previewSource, setPreviewSource] = useState(null);
+	const [previewSourceModal, setPreviewSourceModal] = useState(null);
 	const [showFileModal, setShowFileModal] = useState(null);
+	const navigate = useNavigate();
 
 	function handleOnlineUsers({ onlinePeople }) {
 		// console.log("->>>> ", onlinePeople);
@@ -87,6 +83,7 @@ function Chat() {
 		setRemoteSocketId(joinerId);
 	}
 
+	// handling all incoming socket requests
 	useEffect(() => {
 		socket.on("user:joined", handleNewUserJoined);
 		socket.on("online:users", handleOnlineUsers);
@@ -151,7 +148,7 @@ function Chat() {
 		if (e) e.preventDefault();
 		// console.log("recipient--> ", selectedUserId, " - text--> ", newMessageText);
 
-		setPreviewSource(null);
+		setPreviewSourceModal(null);
 
 		const sentAtTime = new Date();
 		const fileId = Date.now();
@@ -217,6 +214,7 @@ function Chat() {
 			// console.log("imageFile--> ", file);
 			setImageFile(file);
 			previewFile(file);
+			e.target.value = null;
 		}
 	}
 
@@ -224,7 +222,7 @@ function Chat() {
 		const reader = new FileReader();
 		reader.readAsDataURL(file);
 		reader.onloadend = () => {
-			setPreviewSource(reader.result);
+			setPreviewSourceModal(reader.result);
 			// console.log("reader result--> ", reader.result);
 		};
 	}
@@ -261,7 +259,7 @@ function Chat() {
 		}
 	}
 
-	//scroll when message received or sent
+	//scroll when message received or sent and send message seen to ptachala
 	useEffect(() => {
 		if (selectedUserId) {
 			goToBottom();
@@ -275,12 +273,22 @@ function Chat() {
 			if (selectedUserId) {
 				// setLoading(true);
 				// console.log("selected in api-> ", selectedUserId);
-				const response = await axios.get("/auth/messages/" + selectedUserId);
-				if (response.data.success) setMessages(response.data.data);
+				const messagesResponse = await axios.get(
+					"/auth/messages/" + selectedUserId
+				);
+				if (messagesResponse.data.success) {
+					setMessages(messagesResponse.data.data);
+				}
 
-				const res = await axios.get("/auth/messageseen/" + selectedUserId);
-				if (res.data.success)
-					setMessageSeenAt(new Date(res.data.data?.seenAt).getTime());
+				const messageSeenResponse = await axios.get(
+					"/auth/messageseen/" + selectedUserId
+				);
+				if (messageSeenResponse.data.success) {
+					setMessageSeenAt(
+						new Date(messageSeenResponse.data.data?.seenAt).getTime()
+					);
+				}
+				goToBottom();
 				// console.log("res-> ", res.data.data);
 				// setLoading(false);
 			}
@@ -306,7 +314,7 @@ function Chat() {
 
 	//scroll to bottom of messages
 	function goToBottom() {
-		const div = divUnderMessages.current;
+		const div = divUnderMessagesRef.current;
 		if (div) {
 			div.scrollIntoView({ behavior: "instant", block: "end" });
 		}
@@ -325,8 +333,8 @@ function Chat() {
 	};
 	window.addEventListener("resize", getWindowSize);
 
-	//date of message
 	let val;
+	//date of message
 	function getDateOfMessage(sentAt) {
 		val = new Date(sentAt).toLocaleString("en-IN", {
 			day: "numeric",
@@ -359,133 +367,43 @@ function Chat() {
 
 	//check message seen or not
 	function checkIsSeen(sentAt, index) {
-		const val = messageSeenAt >= new Date(sentAt).getTime() ? true : false;
-		// if (index === messagesWithoutDupes.length - 1) {
-		// 	console.log(messageSeenAt, "--", new Date(sentAt).getTime(), "->", val);
-		// }
-		return val;
+		const flag = messageSeenAt >= new Date(sentAt).getTime() ? true : false;
+		return flag;
 	}
 
 	return (
 		<div className="relative h-screen flex tracking-wide font-Poppins">
 			<LogoAnimate />
-			<div
-				className={`pt-6 absolute md:static z-[250] h-screen w-[60%] max-w-[330px] flex flex-col bg-blue-50 backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
-					showList
-						? "translate-x-0 opacity-100"
-						: "translate-x-[-100%] opacity-0"
-				} transition-all duration-500`}
-			>
-				{/* logo and contacts */}
-				<div className="flex-grow">
-					<div className="w-full flex items-center justify-end">
-						<button
-							className={`mr-3 ${
-								!showList && "hidden"
-							} md:hidden z-[260] active:scale-90`}
-							onClick={() => setShowList(false)}
-						>
-							<RxCross2 className="text-2xl text-blue-500 bg-blue-100 hover:bg-blue-200 p-1 rounded-full transition-all duration-200" />
-						</button>
-					</div>
-					<Logo />
-					{/* contacts list */}
-					<div className="space-y-0">
-						{Object.keys(onlinePeople).map((userId) => (
-							<Contact
-								key={userId}
-								id={userId}
-								online={true}
-								username={onlinePeople[userId]}
-								onClick={() => {
-									setSelectedUserId(userId);
-									// console.log("userId: ", userId);
-								}}
-								selected={userId === selectedUserId}
-								setShowList={setShowList}
-							/>
-						))}
-						{Object.keys(offlinePeople).map((userId) => (
-							<Contact
-								key={userId}
-								id={userId}
-								online={false}
-								username={offlinePeople[userId].username}
-								onClick={() => {
-									setSelectedUserId(userId);
-									// console.log("Offline userId: ", userId);
-								}}
-								selected={userId === selectedUserId}
-								setShowList={setShowList}
-							/>
-						))}
-					</div>
-				</div>
 
-				{/* logout button */}
-				<div className="p-2 mx-3 flex items-center justify-between text-center">
-					<span className="flex items-center text-sm text-gray-600">
-						<HiUser className="text-2xl" />
-						{username}
-					</span>
-					<button
-						className="px-4 py-1 bg-blue-100 rounded-sm border border-blue-300 text-gray-400"
-						onClick={handleLogout}
-					>
-						logout
-					</button>
-				</div>
-			</div>
+			{/* Left Sidebar */}
+			<Sidebar
+				showList={showList}
+				setShowList={setShowList}
+				onlinePeople={onlinePeople}
+				offlinePeople={offlinePeople}
+				selectedUserId={selectedUserId}
+				setSelectedUserId={setSelectedUserId}
+				username={username}
+				handleLogout={handleLogout}
+			/>
 
 			{/* selected user message section */}
 			<div
 				className="relative w-full md:w-[calc(100%-330px)] bg-doodle-pattern bg-contain"
 				onClick={() => setIsScroll(!isScroll)}
 			>
-				<div className="absolute z-[200] top-0 w-full h-[60px] pl-2 flex items-center justify-between gap-1 bg-blue-700 text-white">
-					<div className="flex items-center gap-3">
-						<button
-							className="ml-2 md:hidden"
-							onClick={() => setShowList(!showList)}
-						>
-							<IoMdArrowBack className="text-[16px]" />
-						</button>
-						<div className="flex flex-col items-start">
-							<p
-								className={`text-xl capitalize ${
-									selectedUserId ? "opacity-100" : "opacity-0"
-								} transition-all duration-200`}
-							>
-								{onlinePeople[selectedUserId] ??
-									offlinePeople[selectedUserId]?.username}
-							</p>
-							<span
-								className={`ml-1 text-xs ${
-									selectedUserId ? "opacity-100" : "opacity-0"
-								} transition-all duration-700`}
-							>
-								{selectedUserId &&
-									(onlinePeople[selectedUserId] ? "online" : "offline")}
-							</span>
-						</div>
-					</div>
-					{selectedUserId && (
-						<div className="mx-6 bg-pink-30 flex items-center gap-2">
-							<button
-								className="drop-shadow-md hover:bg-blue-500 rounded-full p-1 active:scale-95"
-								onClick={handleAudioCall}
-							>
-								<IoMdCall className="text-xl" />
-							</button>
-							<button
-								className="drop-shadow-md hover:bg-blue-500 rounded-full p-1 active:scale-95"
-								onClick={handleVideoCall}
-							>
-								<BiSolidVideo className="text-xl" />
-							</button>
-						</div>
-					)}
-				</div>
+				{/* details of selected user at top */}
+				<DetailsBar
+					showList={showList}
+					setShowList={setShowList}
+					onlinePeople={onlinePeople}
+					offlinePeople={offlinePeople}
+					selectedUserId={selectedUserId}
+					setSelectedUserId={setSelectedUserId}
+					username={username}
+					handleAudioCall={handleAudioCall}
+					handleVideoCall={handleVideoCall}
+				/>
 				<div className="h-full px-2 flex-grow">
 					{!selectedUserId && (
 						<div className="h-full flex flex-col gap-2 items-center justify-center">
@@ -503,8 +421,8 @@ function Chat() {
 									<div className="spinner2"></div>
 								</div>
 							) : (
-								<div className="relative h-[calc(100vh-4rem)] ">
-									<div className="absolute inset-0 px-2 space-y-2 overflow-y-scroll overflow-x-hidden">
+								<div className="relative h-[calc(100vh-4rem)] bg-yellow-20">
+									<div className="absolute inset-0 px-2 space-y-1 h-full overflow-y-scroll overflow-x-hidden bg-yellow-30">
 										<div className="w-full h-[40px]"></div>
 										{messagesWithoutDupes.map((message, index) => (
 											<div
@@ -530,22 +448,23 @@ function Chat() {
 														message.file
 															? "bg-transparent"
 															: message.sender === id
-															? "bg-blue-500 text-white shadow-md"
-															: "bg-white text-black shadow-md"
-													} text-sm text-left rounded-md space-y-1`}
+															? "bg-blue-600 text-white shadow-md drop-shadow-lg rounded-tr-[4px]"
+															: "bg-white text-black shadow-md drop-shadow-lg rounded-tl-[4px]"
+													} text-sm text-left rounded-2xl space-y-1 pb-[2px]`}
 												>
-													{!message.file && (
+													{/* triangle div */}
+													{!message.file && false && (
 														<div
 															className={`absolute z-[10] ${
 																message.sender === id
-																	? "-right-1 rotate-180 text-blue-500"
+																	? "-right-1 rotate-180 text-blue-600"
 																	: "-left-1 -rotate-90 text-white"
 															} w-3 h-3`}
 														>
 															<div
 																className={`w-0 h-0 border-l-[10px] border-l-transparent border-r-[1px]  border-b-[10px] rounded-sm ${
 																	message.sender === id
-																		? "border-r-blue-500 border-b-blue-500"
+																		? "border-r-blue-600 border-b-blue-600"
 																		: "border-r-white border-b-white"
 																}`}
 															></div>
@@ -603,6 +522,7 @@ function Chat() {
 																		? "text-blue-200"
 																		: "text-gray-600"
 																}`}
+																onClick={() => console.log(previewSourceModal)}
 															>
 																{new Date(message?.sentAt).toLocaleString(
 																	"en-IN",
@@ -623,7 +543,7 @@ function Chat() {
 																			: "text-gray-400"
 																	} `}
 																>
-																	<RiCheckDoubleFill />
+																	<RiCheckDoubleFill className="text-xs" />
 																</span>
 															</p>
 														</div>
@@ -632,13 +552,14 @@ function Chat() {
 											</div>
 										))}
 
-										<div ref={divUnderMessages}></div>
+										<div ref={divUnderMessagesRef}></div>
 									</div>
 								</div>
 							)}
 						</>
 					)}
 				</div>
+				{/* input message box, file attach, send button */}
 				{!!selectedUserId && (
 					<>
 						<button
@@ -652,7 +573,7 @@ function Chat() {
 
 						<form
 							onSubmit={sendMessage}
-							className="bg-pink-40 fixed bottom-0 z-[120] w-full md:w-[calc(100%-330px)] px-3 pb-4 flex items-center gap-2"
+							className="bg-green-40 fixed bottom-0 z-[120] w-full md:w-[calc(100%-330px)] px-3 pb-4 flex items-center gap-2"
 						>
 							<input
 								type="text"
@@ -660,12 +581,11 @@ function Chat() {
 								onChange={(e) => setNewMessageText(e.target.value)}
 								disabled={!!!selectedUserId}
 								placeholder="Type your message here"
-								className="px-3 py-2 w-[80%] md:w-full flex-1 bg-white rounded-full md:rounded border border-blue-300 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md"
+								className="px-3 py-2 w-[80%] md:w-full flex-1 bg-white rounded-full md:rounded-lg border border-blue-400 outline-none focus:border-blue-600 tracking-wide text-gray-900 drop-shadow-md placeholder:text-gray-300 placeholder:text-sm"
 							/>
 							<label className="p-2 bg-blue-200 rounded-full text-gray-600 border border-blue-200 cursor-pointer drop-shadow-md shadow-sm">
 								<input
 									type="file"
-									// ref={fileInputRef}
 									onChange={handleFileChange}
 									className="hidden"
 									accept="image/png, image/jpg, image/jpeg, video/mp4"
@@ -683,74 +603,24 @@ function Chat() {
 					</>
 				)}
 			</div>
-			{previewSource && (
-				<div className="fixed inset-0 z-[400] flex flex-col items-center justify-center backdrop-blur-md bg-white/10">
-					{imageFile.type.includes("image") ? (
-						<img
-							src={previewSource}
-							className="h-[70%] object-cover rounded-lg shadow-lg"
-						/>
-					) : (
-						<video
-							src={previewSource}
-							className="h-[40%] object-contain rounded-lg drop-shadow-md"
-						></video>
-					)}
-					<div className="mt-5 flex items-center gap-4">
-						<button
-							className="bg-gray-600 px-5 py-3 rounded-lg shadow-lg group"
-							onClick={() => {
-								setImageFile(null);
-								setPreviewSource(null);
-							}}
-						>
-							<div className="flex items-center gap-1 text-white">
-								<span>Cancel</span>
-								<IoClose className="text-xl group-hover:text-red-500" />
-							</div>
-						</button>
-						<button
-							className="bg-blue-500 px-5 py-3 rounded-lg shadow-lg group"
-							onClick={sendMessage}
-						>
-							<div className="flex items-center gap-1 text-white">
-								<span>Send</span>
-								<FiSend className="text-lg text-white group-hover:scale-110" />
-							</div>
-						</button>
-					</div>
-				</div>
+
+			{/* modal for previewing media that is to be sent */}
+			{previewSourceModal && (
+				<PreviewMediaModal
+					previewSourceModal={previewSourceModal}
+					setPreviewSourceModal={setPreviewSourceModal}
+					imageFile={imageFile}
+					setImageFile={setImageFile}
+					sendMessage={sendMessage}
+				/>
 			)}
+
+			{/* modal for showing media that is sent or recieved */}
 			{showFileModal && (
-				<div className="fixed inset-0 z-[400] w-full h-full flex items-center justify-center backdrop-blur-lg bg-white/10">
-					<div className="w-[80%] bg-transparent rounded-md flex items-center justify-center">
-						<div className="mx-10 my-8 w-[80%] max-h-screen flex flex-col items-end gap-2">
-							<button
-								className="bg-gray-50 text-black font-semibold drop-shadow-lg hover:bg-gray-100 hover:drop-shadow-md p-[2px] rounded-full"
-								onClick={() => {
-									setShowFileModal(null);
-								}}
-							>
-								<IoClose className="text-xl text-gray-700" />
-							</button>
-							{showFileModal.includes("/image/") ? (
-								<img
-									src={showFileModal}
-									className="h-[60%] object-contain rounded-lg drop-shadow-md cursor-pointer"
-								/>
-							) : (
-								<video
-									src={showFileModal}
-									ref={videoPlayRef}
-									onClick={() => {
-										videoPlayRef.current.play();
-									}}
-									className="h-[40%] lg:h-[60%] object-contain rounded-lg drop-shadow-md"
-								></video>
-							)}
-						</div>
-					</div>
-				</div>
+				<ShowFileModal
+					showFileModal={showFileModal}
+					setShowFileModal={setShowFileModal}
+				/>
 			)}
 		</div>
 	);
