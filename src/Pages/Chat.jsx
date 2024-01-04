@@ -479,7 +479,7 @@ function Chat() {
 														<div className="mx-2 mt-1">
 															{message.text && (
 																<span
-																	className={`${
+																	className={`ml-[1px] text-sm tracking-normal ${
 																		message?.text?.length > 30 && "break-words"
 																	}`}
 																>
@@ -522,7 +522,7 @@ function Chat() {
 																		? "text-blue-200"
 																		: "text-gray-600"
 																}`}
-																onClick={() => console.log(previewSourceModal)}
+																onClick={() => console.log("")}
 															>
 																{new Date(message?.sentAt).toLocaleString(
 																	"en-IN",
@@ -533,15 +533,15 @@ function Chat() {
 																)}
 
 																<span
-																	className={`text-[14px] ${
+																	className={`${
 																		message.sender !== id && "hidden"
 																	} ${
 																		checkIsSeen(message?.sentAt, index)
 																			? message.file
-																				? "text-blue-500"
-																				: "text-white"
+																				? "text-blue-600 animate-[bounce_0.5s_ease-in_0.3]"
+																				: "text-white animate-[bounce_0.5s_ease-in_0.3]"
 																			: "text-gray-400"
-																	} `}
+																	}`}
 																>
 																	<RiCheckDoubleFill className="text-xs" />
 																</span>

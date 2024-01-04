@@ -16,7 +16,7 @@ function Sidebar({
 }) {
 	return (
 		<div
-			className={`pt-6 absolute md:static z-[250] h-screen w-[60%] max-w-[330px] flex flex-col bg-blue-50 backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
+			className={`pt-6 absolute md:static z-[250] h-screen w-[60%] max-w-[330px] flex flex-col bg-gradient-to-br from-blue-100 to-white backdrop-blur-md shadow-[0px_-10px_10px_0px] shadow-black/10 ${
 				showList ? "translate-x-0 opacity-100" : "translate-x-[-100%] opacity-0"
 			} transition-all duration-500`}
 		>

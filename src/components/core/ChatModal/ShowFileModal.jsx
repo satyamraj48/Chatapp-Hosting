@@ -5,21 +5,21 @@ function ShowFileModal({ showFileModal, setShowFileModal }) {
 	const videoPlayRef = useRef(null);
 
 	return (
-		<div className="fixed inset-0 z-[400] w-full h-full flex items-center justify-center backdrop-blur-lg bg-white/10">
-			<div className="w-[80%] bg-transparent rounded-md flex items-center justify-center">
-				<div className="mx-10 my-8 w-[80%] max-h-screen flex flex-col items-end gap-2">
+		<div className="fixed inset-0 z-[400] w-full h-full flex items-center justify-center backdrop-blur-lg bg-white/20">
+			<div className="w-[80%] h-full bg-transparent rounded-md flex items-center justify-center">
+				<div className="mx-10 my-8 h-[80%] flex flex-col items-end justify-center gap-2">
 					<button
-						className="bg-gray-50 text-black font-semibold drop-shadow-lg hover:bg-gray-100 hover:drop-shadow-md p-[2px] rounded-full"
+						className="bg-gray-500 text-gray-50 font-semibold drop-shadow-lg hover:bg-gray-700 hover:drop-shadow-md p-[2px] rounded-full"
 						onClick={() => {
 							setShowFileModal(null);
 						}}
 					>
-						<IoClose className="text-xl text-gray-700" />
+						<IoClose className="text-xl" />
 					</button>
 					{showFileModal.includes("/image/") ? (
 						<img
 							src={showFileModal}
-							className="h-[60%] object-contain rounded-lg drop-shadow-md cursor-pointer"
+							className="max-h-[60%] object-contain rounded-lg drop-shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer"
 						/>
 					) : (
 						<video
@@ -28,7 +28,7 @@ function ShowFileModal({ showFileModal, setShowFileModal }) {
 							onClick={() => {
 								videoPlayRef.current.play();
 							}}
-							className="h-[40%] lg:h-[60%] object-contain rounded-lg drop-shadow-md"
+							className="max-h-[40%] lg:max-h-[60%] object-contain rounded-lg drop-shadow-md hover:shadow-2xl transition-all duration-500"
 						></video>
 					)}
 				</div>
